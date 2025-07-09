@@ -4,6 +4,7 @@
 /packages/cli/node_modules
 /packages/web/node_modules
 /packages/vault-api/node_modules
+/packages/cli/dist
 /.pnp
 .pnp.*
 .yarn/*
