@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import apiRoutes from './routes';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 // Load environment variables
 dotenv.config();
 
@@ -21,7 +22,8 @@ app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
-    service: 'secretio-vault-api'
+    service: 'secretio-vault-api',
+    version: '0.1.0'
   });
 });
 
@@ -31,20 +33,9 @@ app.use('/api', (req, res, next) => {
 });
 
 // 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({ 
-    error: 'Not Found',
-    message: `Route ${req.method} ${req.originalUrl} not found`
-  });
-});
+app.use('*', notFoundHandler);
 
 // Error handler
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Error:', err);
-  res.status(err.status || 500).json({
-    error: err.message || 'Internal Server Error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
-  });
-});
+app.use(errorHandler);
 
 export default app;
