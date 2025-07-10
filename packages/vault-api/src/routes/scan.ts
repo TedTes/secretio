@@ -4,6 +4,7 @@ import { validateBody, ValidatedRequest } from '../middleware/validation';
 import { asyncHandler, createError } from '../middleware/errorHandler';
 import { scanRepositorySchema, scanMultipleSchema } from '../validation/schemas';
 import { ScanRepositoryRequest, ScanMultipleRequest, ApiResponse, ScanRepositoryResponse } from '../types/api';
+import { AsyncScanService } from '../services/asyncScan';
 import { v4 as uuidv4 } from 'uuid';
 const scanRoutes = Router();
 
@@ -91,6 +92,43 @@ scanRoutes.post('/multiple',
       res.json(response);
     })
   );
+
+
+scanRoutes.post('/async',
+    validateBody(scanRepositorySchema),
+    asyncHandler(async (req: ValidatedRequest<ScanRepositoryRequest>, res: Response) => {
+      const { owner, repo, branch, github_token } = req.validatedBody;
+  
+      console.log(`⏳ Queueing async scan for ${owner}/${repo}${branch ? `@${branch}` : ''}`);
+  
+      // Create async scan service with optional GitHub token
+      const asyncScanService = new AsyncScanService(github_token);
+      
+      // Queue the scan
+      const job = await asyncScanService.queueScan({
+        owner,
+        repo,
+        branch,
+        github_token
+      });
+  
+      const response: ApiResponse = {
+        success: true,
+        data: {
+          jobId: job.id,
+          status: job.status,
+          repository: `${owner}/${repo}`,
+          branch: branch || 'main',
+          createdAt: job.createdAt,
+          message: 'Scan queued successfully',
+          statusUrl: `/api/jobs/status/${job.id}`,
+          resultsUrl: `/api/jobs/results/${job.id}`
+        }
+      };
+  
+      res.status(202).json(response);
+    })
+  )
 // GET /api/scan/test
 scanRoutes.get('/test', 
     asyncHandler(async (req:ValidatedRequest<ScanMultipleRequest>, res: Response) => {

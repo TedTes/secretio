@@ -27,10 +27,6 @@ app.get('/health', (req, res) => {
   });
 });
 
-app.use('/api', (req, res, next) => {
-  // Placeholder for API routes
-  next();
-});
 
 // 404 handler
 app.use('*', notFoundHandler);

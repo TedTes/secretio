@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import scanRoutes from './scan';
-
+import jobRoutes from './jobs';
 const router = Router();
 
 // Mount scan routes
 router.use('/scan', scanRoutes);
-
+router.use('/jobs', jobRoutes);
 // API info endpoint
 router.get('/', (req, res) => {
   res.json({
@@ -13,6 +13,7 @@ router.get('/', (req, res) => {
     version: '0.1.0',
     endpoints: {
       scan: '/api/scan',
+       jobs: '/api/jobs',
       health: '/health'
     }
   });
