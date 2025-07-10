@@ -1,0 +1,23 @@
+{
+    "name": "@secretio/shared",
+    "version": "0.1.0",
+    "description": "Shared utilities for Secretio CLI and Vault API",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+      "build": "tsc",
+      "dev": "tsc --watch",
+      "test": "tsx src/test.ts"
+    },
+    "keywords": ["secretio", "shared", "patterns", "scanner"],
+    "author": "Secretio Team",
+    "license": "MIT",
+    "devDependencies": {
+      "typescript": "^5.0.0",
+      "tsx": "^4.0.0",
+      "@types/node": "^20.0.0"
+    },
+    "files": [
+      "dist/**/*"
+    ]
+  }
