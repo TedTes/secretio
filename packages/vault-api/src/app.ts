@@ -1,12 +1,14 @@
+import dotenv from 'dotenv';
+// Load environment variables
+dotenv.config();
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import dotenv from 'dotenv';
+
 import apiRoutes from './routes';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
-// Load environment variables
-dotenv.config();
+
 
 const app = express();
 
