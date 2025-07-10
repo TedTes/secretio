@@ -2,7 +2,7 @@ import { ScanService } from './scan';
 import { jobQueue } from './jobQueue';
 import { ScanRepositoryRequest } from '../types/api';
 import { ScanJob } from '../types/jobs';
-
+import { dbService } from './database';
 export class AsyncScanService {
   private scanService: ScanService;
 
@@ -13,15 +13,17 @@ export class AsyncScanService {
     jobQueue.on('jobStarted', this.processJob.bind(this));
   }
 
-  async queueScan(request: ScanRepositoryRequest): Promise<ScanJob> {
+  async queueScan(request: ScanRepositoryRequest,userId?: string): Promise<ScanJob> {
     // Create job in queue
-    const job = jobQueue.createJob(request);
+    const job = await jobQueue.createJob(request, userId);
     
     console.log(`⏳ Queued scan job ${job.id} for ${request.owner}/${request.repo}`);
     
     return job;
   }
-
+  async getUserJobs(userId: string, limit = 50): Promise<ScanJob[]> {
+    return jobQueue.getUserJobs(userId, limit);
+  }
   private async processJob(job: ScanJob): Promise<void> {
     try {
       console.log(`🚀 Processing job ${job.id}: ${job.request.owner}/${job.request.repo}`);
@@ -67,13 +69,35 @@ export class AsyncScanService {
     }
   }
 
-  getJobStatus(jobId: string): ScanJob | undefined {
+  getJobStatus(jobId: string): Promise<ScanJob | undefined> {
     return jobQueue.getJob(jobId);
   }
+  // getJobResult(jobId: string): ScanJob['result'] | undefined {
+  //   const job = this.jobs?.get(jobId);
+  //   return job?.result;
+  // }
+  async getJobWithResults(jobId: string): Promise<{
+    job: ScanJob | undefined;
+    results?: any[];
+    stats?: any;
+  }> {
+    const job = await jobQueue.getJob(jobId);
+    
+    if (!job || job.status !== 'completed') {
+      return { job };
+    }
 
-  getJobResult(jobId: string): ScanJob['result'] | undefined {
-    const job = jobQueue.getJob(jobId);
-    return job?.result;
+    try {
+      const [results, stats] = await Promise.all([
+        dbService.getScanResults(jobId),
+        dbService.getScanStats(jobId)
+      ]);
+
+      return { job, results, stats };
+    } catch (error) {
+      console.error(`❌ Failed to get job results: ${error instanceof Error?error.message:error}`);
+      return { job };
+    }
   }
 
   getQueueStats() {

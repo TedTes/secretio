@@ -2,13 +2,13 @@ import { EventEmitter } from 'events';
 import { v4 as uuidv4 } from 'uuid';
 import { ScanJob, JobStatus, JobProgress, JobQueueStats } from '../types/jobs';
 import { ScanRepositoryRequest } from '../types/api';
-
+import { dbService } from './database';
 export class JobQueue extends EventEmitter {
   private jobs: Map<string, ScanJob> = new Map();
   private runningJobs: Set<string> = new Set();
   private maxConcurrentJobs: number = 3;
 
-  createJob(request: ScanRepositoryRequest): ScanJob {
+  async createJob(request: ScanRepositoryRequest, userId?: string): Promise<ScanJob> {
     const job: ScanJob = {
       id: uuidv4(),
       type: 'scan',
@@ -17,8 +17,16 @@ export class JobQueue extends EventEmitter {
       request
     };
 
+    // Store in memory for fast access
     this.jobs.set(job.id, job);
-    console.log(`📋 Created job ${job.id} for ${request.owner}/${request.repo}`);
+
+    // Store in database for persistence
+    try {
+      await dbService.createScanJob(job, userId);
+      console.log(`📋 Created job ${job.id} for ${request.owner}/${request.repo} (user: ${userId || 'anonymous'})`);
+    } catch (error) {
+      console.error(`❌ Failed to save job to database: ${error instanceof Error ?error.message:error}`);
+    }
     
     // Emit job created event
     this.emit('jobCreated', job);
@@ -29,11 +37,27 @@ export class JobQueue extends EventEmitter {
     return job;
   }
 
-  getJob(jobId: string): ScanJob | undefined {
-    return this.jobs.get(jobId);
+  async getJob(jobId: string): Promise<ScanJob | undefined> {
+    // Try memory first
+    let job = this.jobs.get(jobId);
+    
+    if (!job) {
+      // Try database
+      try {
+        const dbJob = await dbService.getScanJob(jobId);
+        if (dbJob) {
+          job = this.convertDbJobToScanJob(dbJob);
+          this.jobs.set(jobId, job); // Cache in memory
+        }
+      } catch (error) {
+        console.error(`❌ Failed to get job from database: ${error instanceof Error?error.message:error}`);
+      }
+    }
+    
+    return job;
   }
 
-  updateJobStatus(jobId: string, status: JobStatus, error?: string): void {
+  async updateJobStatus(jobId: string, status: JobStatus, error?: string): Promise<void> {
     const job = this.jobs.get(jobId);
     if (!job) return;
 
@@ -55,25 +79,68 @@ export class JobQueue extends EventEmitter {
       job.error = error;
     }
 
+    // Update database
+    try {
+      await dbService.updateScanJobStatus(jobId, status, error);
+    } catch (dbError) {
+      console.error(`❌ Failed to update job status in database: ${dbError instanceof Error?dbError.message:dbError}`);
+    }
+
     console.log(`📋 Job ${jobId} status: ${status}`);
     this.emit('jobStatusChanged', job);
   }
 
-  updateJobProgress(jobId: string, progress: JobProgress): void {
+  async updateJobProgress(jobId: string, progress: JobProgress): Promise<void> {
     const job = this.jobs.get(jobId);
     if (!job) return;
 
     job.progress = progress;
+    
+    // Update database
+    try {
+      await dbService.updateScanJobProgress(jobId, progress);
+    } catch (error) {
+      console.error(`❌ Failed to update job progress in database: ${error instanceof Error?error.message:error}`);
+    }
+
     this.emit('jobProgress', job);
   }
 
-  setJobResult(jobId: string, result: ScanJob['result']): void {
+  async setJobResult(jobId: string, result: ScanJob['result']): Promise<void> {
     const job = this.jobs.get(jobId);
     if (!job) return;
 
     job.result = result;
+
+    // Store results and stats in database
+    if (result && result.success) {
+      try {
+        // Store scan results
+        await dbService.storeScanResults(jobId, result.results);
+        
+        // Store scan statistics
+        const duration = job.completedAt && job.startedAt 
+          ? job.completedAt.getTime() - job.startedAt.getTime()
+          : 0;
+        
+        await dbService.storeScanStats(jobId, result.stats, duration);
+        
+        console.log(`💾 Stored results for job ${jobId}: ${result.results.length} findings`);
+      } catch (error) {
+        console.error(`❌ Failed to store job results: ${error instanceof Error?error.message:error}`);
+      }
+    }
   }
 
+  async getUserJobs(userId: string, limit = 50): Promise<ScanJob[]> {
+    try {
+      const dbJobs = await dbService.getUserScanJobs(userId, limit);
+      return dbJobs.map(dbJob => this.convertDbJobToScanJob(dbJob));
+    } catch (error) {
+      console.error(`❌ Failed to get user jobs: ${error instanceof Error?error.message:error}`);
+      return [];
+    }
+  }
   private processNextJob(): void {
     // Check if we can run more jobs
     if (this.runningJobs.size >= this.maxConcurrentJobs) {
@@ -96,6 +163,30 @@ export class JobQueue extends EventEmitter {
     this.emit('jobStarted', pendingJob);
   }
 
+  private convertDbJobToScanJob(dbJob: any): ScanJob {
+    const [owner, repo] = dbJob.repository.split('/');
+    
+    return {
+      id: dbJob.id,
+      type: 'scan',
+      status: dbJob.status,
+      createdAt: new Date(dbJob.created_at),
+      startedAt: dbJob.started_at ? new Date(dbJob.started_at) : undefined,
+      completedAt: dbJob.completed_at ? new Date(dbJob.completed_at) : undefined,
+      error: dbJob.error_message,
+      progress: dbJob.progress_total ? {
+        current: dbJob.progress_current || 0,
+        total: dbJob.progress_total,
+        currentFile: dbJob.progress_file
+      } : undefined,
+      request: {
+        owner,
+        repo,
+        branch: dbJob.branch,
+        github_token: dbJob.github_token
+      }
+    };
+  }
   getPendingJobs(): ScanJob[] {
     return Array.from(this.jobs.values())
       .filter(job => job.status === 'pending')
@@ -118,7 +209,18 @@ export class JobQueue extends EventEmitter {
       total: jobs.length
     };
   }
-
+  async loadActiveJobs(): Promise<void> {
+    try {
+      // Load running and pending jobs from database on startup
+      console.log('🔄 Loading active jobs from database...');
+      
+      // This would require a method to get jobs by status
+      // For now, we'll rely on in-memory state
+      
+    } catch (error) {
+      console.error('❌ Failed to load active jobs:', error instanceof Error?error.message:error);
+    }
+  }
   // Cleanup old jobs (keep last 1000)
   cleanup(): void {
     const jobs = Array.from(this.jobs.values())
