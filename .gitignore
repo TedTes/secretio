@@ -5,6 +5,7 @@
 # Test files with fake credentials
 **/test-keys.*
 **/fake-keys.*
+**/test-db.*
 # dependencies
 **/node_modules/
 **/dist/
