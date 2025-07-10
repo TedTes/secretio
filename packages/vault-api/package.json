@@ -10,6 +10,7 @@
       "test": "tsx src/test.ts"
     },
     "dependencies": {
+      "@secretio/shared": "file:../shared",
       "express": "^4.18.0",
       "cors": "^2.8.5",
       "helmet": "^7.0.0",
