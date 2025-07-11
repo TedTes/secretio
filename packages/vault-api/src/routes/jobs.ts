@@ -24,7 +24,7 @@ jobRoutes.get('/status/:jobId',
   asyncHandler(async (req: ValidatedRequest, res: Response) => {
     const { jobId } = req.validatedParams;
     
-    const job = asyncScanService.getJobStatus(jobId);
+    const job = await asyncScanService.getJobStatus(jobId);
     
     if (!job) {
       throw createError('Job not found', 404, 'JOB_NOT_FOUND');
@@ -55,7 +55,7 @@ jobRoutes.get('/results/:jobId',
   asyncHandler(async (req: ValidatedRequest, res: Response) => {
     const { jobId } = req.validatedParams;
     
-    const job = asyncScanService.getJobStatus(jobId);
+    const job = await asyncScanService.getJobStatus(jobId);
     
     if (!job) {
       throw createError('Job not found', 404, 'JOB_NOT_FOUND');
@@ -72,7 +72,7 @@ jobRoutes.get('/results/:jobId',
       throw createError(`Job failed: ${job.error}`, 400, 'JOB_FAILED');
     }
 
-    const result = asyncScanService.getJobResult(jobId);
+    const result = await asyncScanService.getJobWithResults(jobId);
     
     if (!result) {
       throw createError('Job results not found', 404, 'RESULTS_NOT_FOUND');

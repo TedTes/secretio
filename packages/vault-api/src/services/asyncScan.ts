@@ -72,10 +72,7 @@ export class AsyncScanService {
   getJobStatus(jobId: string): Promise<ScanJob | undefined> {
     return jobQueue.getJob(jobId);
   }
-  // getJobResult(jobId: string): ScanJob['result'] | undefined {
-  //   const job = this.jobs?.get(jobId);
-  //   return job?.result;
-  // }
+
   async getJobWithResults(jobId: string): Promise<{
     job: ScanJob | undefined;
     results?: any[];
