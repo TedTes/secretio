@@ -94,23 +94,22 @@ scanRoutes.post('/multiple',
   );
 
 
-scanRoutes.post('/async',
+  scanRoutes.post('/async',
     validateBody(scanRepositorySchema),
     asyncHandler(async (req: ValidatedRequest<ScanRepositoryRequest>, res: Response) => {
-      const { owner, repo, branch, github_token } = req.validatedBody;
+      const { owner, repo, branch, github_token, user_id } = req.validatedBody;
   
-      console.log(`⏳ Queueing async scan for ${owner}/${repo}${branch ? `@${branch}` : ''}`);
+      console.log(`⏳ Queueing async scan for ${owner}/${repo}${branch ? `@${branch}` : ''} (user: ${user_id || 'anonymous'})`);
   
-      // Create async scan service with optional GitHub token
       const asyncScanService = new AsyncScanService(github_token);
       
-      // Queue the scan
+
       const job = await asyncScanService.queueScan({
         owner,
         repo,
         branch,
         github_token
-      });
+      }, user_id);
   
       const response: ApiResponse = {
         success: true,

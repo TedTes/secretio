@@ -6,6 +6,7 @@ export interface ScanRepositoryRequest {
   repo: string;
   branch?: string;
   github_token?: string;
+  user_id?: string;
 }
 
 export interface ScanMultipleRequest {

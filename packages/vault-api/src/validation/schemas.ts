@@ -2,6 +2,7 @@ import Joi from 'joi';
 
 // GitHub repository validation
 export const scanRepositorySchema = Joi.object({
+  user_id: Joi.string().uuid().optional(),
   owner: Joi.string()
     .alphanum()
     .min(1)
