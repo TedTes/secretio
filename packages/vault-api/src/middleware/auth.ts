@@ -167,10 +167,10 @@ export function requireRole(roles: string | string[]) {
         success: false,
         error: 'Insufficient permissions',
         timestamp: new Date().toISOString(),
-        // details: {
-        //   message: allowedRoles,
-        //   current: userRole
-        // }
+        details: {
+          message: allowedRoles,
+          current: userRole
+        }
       };
       res.status(403).json(errorResponse);
       return;

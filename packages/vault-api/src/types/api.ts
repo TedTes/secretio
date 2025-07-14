@@ -60,6 +60,6 @@ export interface ValidationError {
 export interface ErrorResponse {
   success: false;
   error: string;
-  details?: ValidationError[];
+  details?: ValidationError[] | {};
   timestamp: string;
 }
