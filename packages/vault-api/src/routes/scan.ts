@@ -1,10 +1,11 @@
 import { Router, Request, Response } from 'express';
 import { ScanService } from '../services/scan';
-import { validateBody, ValidatedRequest } from '../middleware/validation';
+import { validateBody} from '../middleware/validation';
 import { asyncHandler, createError } from '../middleware/errorHandler';
 import { scanRepositorySchema, scanMultipleSchema } from '../validation/schemas';
 import { ScanRepositoryRequest, ScanMultipleRequest, ApiResponse, ScanRepositoryResponse } from '../types/api';
 import { AsyncScanService } from '../services/asyncScan';
+import {ValidatedRequest} from "../types";
 import { v4 as uuidv4 } from 'uuid';
 const scanRoutes = Router();
 

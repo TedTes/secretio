@@ -1,11 +1,14 @@
+import { supabase } from '../config/database';
+import { Request } from 'express';
 export interface User {
     id: string;
     email?: string;
     role?: string;
     aud?: string;
-    exp?: number;
+    exp?: number | string;
     created_at?: string;
     updated_at?: string;
+    user_metadata?:any
   }
   
   export interface AuthSession {
@@ -112,3 +115,20 @@ export interface User {
       PERMISSIONS.ADMIN_ALL
     ]
   };
+
+  export interface ChangePasswordRequest {
+    current_password: string;
+    new_password: string;
+  }
+
+  // Extend Request interface to include user context
+export interface AuthenticatedRequest extends Request {
+  user: {
+    id: string;
+    email?: string;
+    role?: string;
+    aud?: string;
+    exp?: string;
+  };
+  supabaseClient: typeof supabase;
+}

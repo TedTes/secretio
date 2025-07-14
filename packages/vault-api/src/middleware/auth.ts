@@ -3,18 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 import { supabase } from '../config/database';
 import { createError } from './errorHandler';
 import { ErrorResponse } from '../types/api';
-
-// Extend Request interface to include user context
-export interface AuthenticatedRequest extends Request {
-  user: {
-    id: string;
-    email?: string;
-    role?: string;
-    aud?: string;
-    exp?: string;
-  };
-  supabaseClient: typeof supabase;
-}
+import {AuthenticatedRequest} from "../types/auth";
 
 /**
  * Extract JWT token from Authorization header

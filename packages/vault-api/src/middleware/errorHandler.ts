@@ -1,11 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ErrorResponse } from '../types/api';
+import {AppError} from "../types/error";
 
-export interface AppError extends Error {
-  status?: number;
-  code?: string;
-  details?: any;
-}
 
 export function createError(message: string, status: number = 500, code?: string, details?: any): AppError {
   const error = new Error(message) as AppError;

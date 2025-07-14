@@ -1,12 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import Joi from 'joi';
 import { ValidationError, ErrorResponse } from '../types/api';
+import {ValidatedRequest} from "../types/validation"
 
-export interface ValidatedRequest<T = any> extends Request {
-  validatedBody: T;
-  validatedQuery: any;
-  validatedParams: any;
-}
 
 export function validateBody<T>(schema: Joi.ObjectSchema) {
   return (req: Request, res: Response, next: NextFunction) => {

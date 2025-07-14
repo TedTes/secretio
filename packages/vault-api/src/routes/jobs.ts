@@ -1,8 +1,9 @@
 import { Router, Response } from 'express';
-import { validateParams, ValidatedRequest } from '../middleware/validation';
+import { validateParams } from '../middleware/validation';
 import { asyncHandler, createError } from '../middleware/errorHandler';
 import { AsyncScanService } from '../services/asyncScan';
-import { ApiResponse } from '../types/api';
+
+import {ValidatedRequest,ApiResponse} from "../types";
 import Joi from 'joi';
 
 const jobRoutes = Router();

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { AuthenticatedRequest, getAuthenticatedUser } from '../middleware/auth';
+import {  getAuthenticatedUser } from '../middleware/auth';
 import { hasPermission } from '../config/auth';
-import {Permission, User,ErrorResponse} from "../types/";
+import {Permission, User,ErrorResponse,AuthenticatedRequest} from "../types/";
 
 
 /**
