@@ -3,11 +3,13 @@ import { asyncHandler } from '../middleware/errorHandler';
 import { AsyncScanService } from '../services/asyncScan';
 import { dbService } from '../services/database';
 import { ApiResponse } from '../types/api';
+import { requireAuth, requireOwnership, requireAdmin } from '../middleware/auth';
 
 const userRoutes = Router();
 
 // GET /api/users/:userId/jobs
 userRoutes.get('/:userId/jobs',
+  requireAuth, requireOwnership('userId'),
   asyncHandler(async (req:Request, res: Response) => {
     const { userId } = req.params;
     const limit = parseInt(req.query.limit as string) || 50;
@@ -29,6 +31,7 @@ userRoutes.get('/:userId/jobs',
 
 // GET /api/users/:userId/stats
 userRoutes.get('/:userId/stats',
+  requireAuth, requireOwnership('userId'),
   asyncHandler(async (req:Request, res: Response) => {
     const { userId } = req.params;
 
@@ -45,6 +48,7 @@ userRoutes.get('/:userId/stats',
 
 // POST /api/users
 userRoutes.post('/',
+  requireAdmin,
   asyncHandler(async (req:Request, res: Response) => {
     const { email, github_username } = req.body;
 

@@ -2,12 +2,14 @@ import { Router } from 'express';
 import scanRoutes from './scan';
 import jobRoutes from './jobs';
 import userRoutes from './users';
+import authRoutes from './auth';
 const router = Router();
 
 // Mount scan routes
 router.use('/scan', scanRoutes);
 router.use('/jobs', jobRoutes);
 router.use('/users', userRoutes);
+router.use('/auth', authRoutes);
 // API info endpoint
 router.get('/', (req, res) => {
   res.json({

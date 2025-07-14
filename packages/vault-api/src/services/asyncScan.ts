@@ -5,17 +5,18 @@ import { ScanJob } from '../types/jobs';
 import { dbService } from './database';
 export class AsyncScanService {
   private scanService: ScanService;
-
-  constructor(githubToken?: string) {
+  private userId?: string;
+  constructor(githubToken?: string, userId?: string) {
+    this.userId = userId;
     this.scanService = new ScanService(githubToken);
     
     // Listen for job events
     jobQueue.on('jobStarted', this.processJob.bind(this));
   }
 
-  async queueScan(request: ScanRepositoryRequest,userId?: string): Promise<ScanJob> {
+  async queueScan(request: ScanRepositoryRequest): Promise<ScanJob> {
     // Create job in queue
-    const job = await jobQueue.createJob(request, userId);
+    const job = await jobQueue.createJob(request, this.userId);
     
     console.log(`⏳ Queued scan job ${job.id} for ${request.owner}/${request.repo}`);
     

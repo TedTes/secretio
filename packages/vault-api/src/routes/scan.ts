@@ -5,12 +5,17 @@ import { asyncHandler, createError } from '../middleware/errorHandler';
 import { scanRepositorySchema, scanMultipleSchema } from '../validation/schemas';
 import { ScanRepositoryRequest, ScanMultipleRequest, ApiResponse, ScanRepositoryResponse } from '../types/api';
 import { AsyncScanService } from '../services/asyncScan';
-import {ValidatedRequest} from "../types";
+import {ValidatedRequest,AuthenticatedRequest} from "../types";
+import { requireAuth} from '../middleware/auth';
+import {getUserId,injectUserContext} from "../utils";
+
 import { v4 as uuidv4 } from 'uuid';
 const scanRoutes = Router();
 
 // POST /api/scan/repository
 scanRoutes.post('/repository',
+  requireAuth,
+  injectUserContext,
     validateBody(scanRepositorySchema), 
     asyncHandler(async (req: ValidatedRequest<ScanRepositoryRequest>, res: Response) => {
 
@@ -53,12 +58,14 @@ scanRoutes.post('/repository',
 }));
 
 scanRoutes.post('/multiple',
+  requireAuth, injectUserContext,
     validateBody(scanMultipleSchema),
     asyncHandler(async (req: ValidatedRequest<ScanMultipleRequest>, res: Response) => {
       const startTime = Date.now();
       const scanId = uuidv4();
       
       const { repositories, github_token } = req.validatedBody;
+      const userId = getUserId(req);
   
       if (repositories.length > 10) {
         throw createError('Maximum 10 repositories allowed per request', 400, 'REPO_LIMIT_EXCEEDED');
@@ -96,13 +103,17 @@ scanRoutes.post('/multiple',
 
 
   scanRoutes.post('/async',
+    requireAuth, injectUserContext,
     validateBody(scanRepositorySchema),
     asyncHandler(async (req: ValidatedRequest<ScanRepositoryRequest>, res: Response) => {
-      const { owner, repo, branch, github_token, user_id } = req.validatedBody;
-  
-      console.log(`⏳ Queueing async scan for ${owner}/${repo}${branch ? `@${branch}` : ''} (user: ${user_id || 'anonymous'})`);
-  
-      const asyncScanService = new AsyncScanService(github_token);
+      const { owner, repo, branch, github_token} = req.validatedBody;
+      const userId = getUserId(req);
+      if(!userId) {
+        throw createError('User Id must not be null');
+      }
+      console.log(`⏳ Queueing async scan for ${owner}/${repo}${branch ? `@${branch}` : ''} (user: ${userId || 'anonymous'})`);
+    
+      const asyncScanService = new AsyncScanService(github_token,userId);
       
 
       const job = await asyncScanService.queueScan({
@@ -110,7 +121,7 @@ scanRoutes.post('/multiple',
         repo,
         branch,
         github_token
-      }, user_id);
+      });
   
       const response: ApiResponse = {
         success: true,

@@ -33,7 +33,7 @@ export class DatabaseService {
   }
 
   // Job management
-  async createScanJob(job: ScanJob, userId?: string): Promise<void> {
+  async createScanJob(job: ScanJob, userId: string): Promise<void> {
     const { error } = await supabase
       .from('scan_jobs')
       .insert({

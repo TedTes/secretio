@@ -3,7 +3,9 @@ import { validateParams } from '../middleware/validation';
 import { asyncHandler, createError } from '../middleware/errorHandler';
 import { AsyncScanService } from '../services/asyncScan';
 
-import {ValidatedRequest,ApiResponse} from "../types";
+import {ValidatedRequest,ApiResponse,AuthenticatedRequest} from "../types";
+import { requireJobOwnership } from '../utils';
+import { requireAuth  } from '../middleware/auth';
 import Joi from 'joi';
 
 const jobRoutes = Router();
@@ -21,6 +23,7 @@ const jobIdSchema = Joi.object({
 
 // GET /api/jobs/status/:jobId
 jobRoutes.get('/status/:jobId',
+  requireAuth, requireJobOwnership(),
   validateParams(jobIdSchema),
   asyncHandler(async (req: ValidatedRequest, res: Response) => {
     const { jobId } = req.validatedParams;
@@ -52,6 +55,7 @@ jobRoutes.get('/status/:jobId',
 
 // GET /api/jobs/results/:jobId
 jobRoutes.get('/results/:jobId',
+  requireAuth, requireJobOwnership(),
   validateParams(jobIdSchema),
   asyncHandler(async (req: ValidatedRequest, res: Response) => {
     const { jobId } = req.validatedParams;
@@ -94,6 +98,7 @@ jobRoutes.get('/results/:jobId',
 
 // GET /api/jobs/queue
 jobRoutes.get('/queue',
+  requireAuth, 
   asyncHandler(async (req:Request, res: Response) => {
     const queueInfo = asyncScanService.getQueueStats();
     
