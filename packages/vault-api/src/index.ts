@@ -1,8 +1,8 @@
 
 
-
-import { initializeAuth, validateAuthConfig } from './config/auth';
 import app from './app';
+import { initializeAuth, validateAuthConfig } from './config/auth';
+
 
 const PORT = process.env.PORT || 3001;
 
