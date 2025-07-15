@@ -37,7 +37,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Initialize auth state on mount
   useEffect(() => {
     initializeAuth();
-  }, []);
+  });
 
   // Set up automatic token refresh
   useEffect(() => {

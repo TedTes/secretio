@@ -15,7 +15,7 @@ export interface User {
     user: User;
   }
   
-  export interface ApiResponse<T = any> {
+  export interface ApiResponse<T = object> {
     success: boolean;
     data?: T;
     error?: string;

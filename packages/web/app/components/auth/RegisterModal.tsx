@@ -58,6 +58,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
       setFormData({ email: '', password: '', confirmPassword: '', github_username: '' });
       setValidationError('');
     } catch (error) {
+      console.log(error);
       // Error is handled by AuthContext
     }
   };

@@ -5,7 +5,7 @@ class ApiClient {
   
     constructor() {
       this.baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      
+
       // Initialize token from localStorage if available
       if (typeof window !== 'undefined') {
         this.accessToken = localStorage.getItem('access_token');
@@ -224,8 +224,8 @@ class ApiClient {
       return response.data;
     }
   
-    async getScanResults(jobId: string): Promise<{ results: ScanResult[]; stats: any }> {
-      const response = await this.request<{ results: ScanResult[]; stats: any }>(`/api/jobs/results/${jobId}`);
+    async getScanResults(jobId: string): Promise<{ results: ScanResult[]; stats: object }> {
+      const response = await this.request<{ results: ScanResult[]; stats: object }>(`/api/jobs/results/${jobId}`);
       
       if (!response.success || !response.data) {
         throw new Error('Failed to get scan results');
@@ -248,7 +248,7 @@ class ApiClient {
       return response.data.jobs;
     }
   
-    async getUserStats(): Promise<any> {
+    async getUserStats(): Promise<unknown> {
       const user = await this.getCurrentUser();
       if (!user) throw new Error('User not authenticated');
       
