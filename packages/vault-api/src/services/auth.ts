@@ -94,7 +94,7 @@ export class AuthService {
         email,
         password
       });
-
+      
       if (error) {
         console.error('Supabase login error:', error);
         

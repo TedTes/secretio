@@ -224,8 +224,8 @@ class ApiClient {
       return response.data;
     }
   
-    async getScanResults(jobId: string): Promise<{ results: ScanResult[]; stats: object }> {
-      const response = await this.request<{ results: ScanResult[]; stats: object }>(`/api/jobs/results/${jobId}`);
+    async getScanResults(jobId: string): Promise<{ results: ScanResult[]; stats: any }> {
+      const response = await this.request<{ results: ScanResult[]; stats: any }>(`/api/jobs/results/${jobId}`);
       
       if (!response.success || !response.data) {
         throw new Error('Failed to get scan results');
