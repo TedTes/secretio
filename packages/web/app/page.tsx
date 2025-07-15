@@ -1,11 +1,20 @@
 'use client'
 
 import { useState } from 'react'
-
+import { useAuth } from './contexts/AuthContext';
+import LoginModal from './components/auth/LoginModal';
+import RegisterModal from './components/auth/RegisterModal';
+import UserMenu from './components/auth/UserMenu';
 export default function Home() {
   const [scanStatus, setScanStatus] = useState('')
-
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const { isAuthenticated} = useAuth();
   const handleScanClick = () => {
+    if (!isAuthenticated) {
+      setShowLoginModal(true);
+      return;
+    }
     setScanStatus('Installing CLI...')
     setTimeout(() => {
       setScanStatus('CLI Installed! Run: secretio scan')
@@ -30,9 +39,14 @@ export default function Home() {
               <a href="#features" className="text-gray-300 hover:text-white transition-colors">Features</a>
               <a href="#pricing" className="text-gray-300 hover:text-white transition-colors">Pricing</a>
               <a href="#docs" className="text-gray-300 hover:text-white transition-colors">Docs</a>
-              <button className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors">
-                Get Started
-              </button>
+              {isAuthenticated ? (
+  <UserMenu />
+) : (
+  
+  <button onClick={() => setShowLoginModal(true)} className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors">
+    Get Started
+  </button>
+)}
             </div>
           </div>
         </div>
@@ -65,9 +79,12 @@ export default function Home() {
             >
               {scanStatus || 'Scan My Repos'}
             </button>
-            <button className="border border-gray-600 hover:border-gray-400 px-8 py-4 rounded-lg font-semibold text-lg transition-colors">
-              Start Clean
-            </button>
+            <button 
+  onClick={() => isAuthenticated ? window.location.href = '/dashboard' : setShowLoginModal(true)}
+  className="border border-gray-600 hover:border-gray-400 px-8 py-4 rounded-lg font-semibold text-lg transition-colors"
+>
+  Start Clean
+</button>
           </div>
           
           {/* Terminal Demo */}
@@ -119,7 +136,7 @@ export default function Home() {
             <div className="bg-slate-900 border border-gray-700 rounded-lg p-6 hover:transform hover:-translate-y-1 transition-all">
               <div className="text-4xl mb-4">😰</div>
               <h3 className="text-xl font-semibold mb-3">No Visibility</h3>
-              <p className="text-gray-300">You have no idea where your keys are, who's using them, or when they expire</p>
+              <p className="text-gray-300">You have no idea where your keys are, who is using them, or when they expire</p>
             </div>
           </div>
         </div>
@@ -289,7 +306,7 @@ export default function Home() {
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
           <h2 className="text-4xl font-bold mb-6">Ready to secure your API keys?</h2>
           <p className="text-xl text-gray-300 mb-12">
-            Join thousands of developers who've stopped scattering secrets
+            Join thousands of developers who have stopped scattering secrets
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -362,6 +379,22 @@ export default function Home() {
           </div>
         </div>
       </footer>
+      <LoginModal 
+  isOpen={showLoginModal} 
+  onClose={() => setShowLoginModal(false)}
+  onSwitchToRegister={() => {
+    setShowLoginModal(false);
+    setShowRegisterModal(true);
+  }}
+/>
+<RegisterModal 
+  isOpen={showRegisterModal} 
+  onClose={() => setShowRegisterModal(false)}
+  onSwitchToLogin={() => {
+    setShowRegisterModal(false);
+    setShowLoginModal(true);
+  }}
+/>
     </div>
   )
 }

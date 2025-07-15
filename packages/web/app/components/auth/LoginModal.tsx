@@ -28,6 +28,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
       // Reset form
       setFormData({ email: '', password: '' });
     } catch (error) {
+        console.log(error);
       // Error is handled by AuthContext
     }
   };
@@ -104,7 +105,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
             onClick={onSwitchToRegister}
             className="text-blue-400 hover:text-blue-300 text-sm transition-colors"
           >
-            Don't have an account? Sign up
+            Don&apos;'t have an account? Sign up
           </button>
         </div>
       </form>
