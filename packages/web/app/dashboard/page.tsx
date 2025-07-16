@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 import { useApi, useUserJobs, useUserStats } from '../hooks/useApi';
 import { apiClient } from '../lib/api';
 import { ScanJob } from '../lib/types';
@@ -13,8 +14,7 @@ type UserStats = {
   };
 export default function Dashboard() {
   const { user, isAuthenticated, isLoading } = useAuth();
-  const [showNewScanModal, setShowNewScanModal] = useState(false);
-  
+  const router = useRouter();
 //   API hooks for user data
   const { data: jobs, loading: jobsLoading, execute: refetchJobs } = useUserJobs();
   const { data: stats, loading: statsLoading } = useUserStats() as { data?: UserStats, loading: boolean };
@@ -148,39 +148,39 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Action Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* New Scan Card */}
-          <div className="bg-slate-800 rounded-lg border border-gray-700 p-6">
-            <h2 className="text-xl font-bold text-white mb-4">Start New Scan</h2>
-            <p className="text-gray-300 mb-6">
-              Scan your repositories for exposed API keys and credentials
-            </p>
-            <button
-              onClick={() => setShowNewScanModal(true)}
-              className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg text-white font-semibold transition-colors"
-            >
-              Scan Repository
-            </button>
-          </div>
+   {/* Action Cards */}
+<div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+  {/* New Scan Card */}
+  <div className="bg-slate-800 rounded-lg border border-gray-700 p-6">
+    <h2 className="text-xl font-bold text-white mb-4">Start New Scan</h2>
+    <p className="text-gray-300 mb-6">
+      Scan your GitHub repositories for exposed API keys and credentials
+    </p>
+    <button
+      onClick={() => router.push('/scan/new')}
+      className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg text-white font-semibold transition-colors"
+    >
+      Scan Repository
+    </button>
+  </div>
 
-          {/* Vault Upgrade Card */}
-          <div className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-500/20 rounded-lg p-6">
-            <h2 className="text-xl font-bold text-white mb-4">🔐 Secure Vault</h2>
-            <p className="text-gray-300 mb-4">
-              Store and manage your API keys securely. Never hardcode credentials again.
-            </p>
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-sm text-gray-400">Starting at</span>
-                <div className="text-2xl font-bold text-white">$15<span className="text-sm text-gray-400">/user/month</span></div>
-              </div>
-              <button className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white font-semibold transition-colors">
-                Upgrade Now
-              </button>
-            </div>
-          </div>
-        </div>
+  {/* Rest of your existing vault upgrade card stays the same */}
+  <div className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-500/20 rounded-lg p-6">
+    <h2 className="text-xl font-bold text-white mb-4">🔐 Secure Vault</h2>
+    <p className="text-gray-300 mb-4">
+      Store and manage your API keys securely. Never hardcode credentials again.
+    </p>
+    <div className="flex items-center justify-between">
+      <div>
+        <span className="text-sm text-gray-400">Starting at</span>
+        <div className="text-2xl font-bold text-white">$15<span className="text-sm text-gray-400">/user/month</span></div>
+      </div>
+      <button className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white font-semibold transition-colors">
+        Upgrade Now
+      </button>
+    </div>
+  </div>
+</div>
 
         {/* Recent Scans */}
         <div className="bg-slate-800 rounded-lg border border-gray-700">
@@ -202,7 +202,7 @@ export default function Dashboard() {
                 <h3 className="text-lg font-medium text-white mb-2">No scans yet</h3>
                 <p className="text-gray-300 mb-4">Start by scanning your first repository</p>
                 <button
-                  onClick={() => setShowNewScanModal(true)}
+                  onClick={() => router.push('/scan/new')}
                   className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white transition-colors"
                 >
                   Scan Repository
@@ -249,22 +249,6 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-
-      {/* New Scan Modal Placeholder */}
-      {showNewScanModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-slate-800 rounded-lg border border-gray-700 p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-bold text-white mb-4">Start New Scan</h3>
-            <p className="text-gray-300 mb-4">Feature coming soon! You'll be able to scan repositories directly from here.</p>
-            <button
-              onClick={() => setShowNewScanModal(false)}
-              className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white transition-colors"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 
