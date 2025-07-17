@@ -73,3 +73,10 @@ export const paginationSchema = Joi.object({
   page: Joi.number().integer().min(1).max(1000).default(1),
   limit: Joi.number().integer().min(1).max(100).default(20)
 });
+
+export const githubExchangeSchema = Joi.object({
+  code: Joi.string().required(),
+  state: Joi.string().valid('repo-access').required()
+});
+
+export const githubDisconnectSchema = Joi.object({});
