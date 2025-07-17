@@ -5,8 +5,15 @@ import { ScanJob } from '../types/jobs';
 import { dbService } from './database';
 export class AsyncScanService {
   private scanService: ScanService;
-  private userId?: string;
-  constructor(githubToken?: string, userId?: string) {
+  private userId: string;
+  constructor(githubToken: string, userId: string) {
+    if (!githubToken) {
+      throw new Error('GitHub token is required for AsyncScanService');
+    }
+    
+    if (!userId) {
+      throw new Error('User ID is required for AsyncScanService');
+    }
     this.userId = userId;
     this.scanService = new ScanService(githubToken);
     

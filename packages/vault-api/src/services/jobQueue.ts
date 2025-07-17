@@ -8,7 +8,7 @@ export class JobQueue extends EventEmitter {
   private runningJobs: Set<string> = new Set();
   private maxConcurrentJobs: number = 3;
 
-  async createJob(request: ScanRepositoryRequest, userId?: string): Promise<ScanJob> {
+  async createJob(request: ScanRepositoryRequest, userId: string): Promise<ScanJob> {
     const job: ScanJob = {
       id: uuidv4(),
       type: 'scan',
