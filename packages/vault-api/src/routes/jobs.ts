@@ -2,7 +2,7 @@ import { Router, Response } from 'express';
 import { validateParams } from '../middleware/validation';
 import { asyncHandler, createError } from '../middleware/errorHandler';
 import { AsyncScanService } from '../services/asyncScan';
-
+import {GitHubService} from "../services/github";
 import {ValidatedRequest,ApiResponse,AuthenticatedRequest} from "../types";
 import { requireJobOwnership } from '../utils';
 import { requireAuth  } from '../middleware/auth';
@@ -10,8 +10,24 @@ import Joi from 'joi';
 
 const jobRoutes = Router();
 
-// Global async scan service (in production, TODO:this would be per-user)
-const asyncScanService = new AsyncScanService();
+// Helper function to get user-specific AsyncScanService
+const getUserScanService = async (userId: string): Promise<AsyncScanService> => {
+    // Get user's GitHub connection from database
+    const githubService = new GitHubService();
+    const githubConnection = await githubService.getUserGitHubConnection(userId);
+  
+    if (!githubConnection) {
+      throw createError('GitHub account not connected', 400, 'GITHUB_NOT_CONNECTED');
+    }
+    const userGithubService = new GitHubService(githubConnection.access_token);
+    const isValid = await userGithubService.validateToken(githubConnection.access_token);
+    if (!isValid) {
+        // Remove invalid token from database
+    await githubService.removeUserGitHubToken(userId);
+      throw createError('GitHub token expired, please reconnect', 401, 'GITHUB_TOKEN_EXPIRED');
+    }
+  return new AsyncScanService(githubConnection.access_token, userId);
+};
 
 // Validation schemas
 const jobIdSchema = Joi.object({
@@ -25,9 +41,12 @@ const jobIdSchema = Joi.object({
 jobRoutes.get('/status/:jobId',
   requireAuth, requireJobOwnership(),
   validateParams(jobIdSchema),
-  asyncHandler(async (req: ValidatedRequest, res: Response) => {
+  asyncHandler(async (req: AuthenticatedRequest & ValidatedRequest, res: Response) => {
     const { jobId } = req.validatedParams;
+    const userId = req.user.id;
     
+    // Create user-specific service instance
+    const asyncScanService = await getUserScanService(userId);
     const job = await asyncScanService.getJobStatus(jobId);
     
     if (!job) {
@@ -57,9 +76,12 @@ jobRoutes.get('/status/:jobId',
 jobRoutes.get('/results/:jobId',
   requireAuth, requireJobOwnership(),
   validateParams(jobIdSchema),
-  asyncHandler(async (req: ValidatedRequest, res: Response) => {
+  asyncHandler(async (req: AuthenticatedRequest & ValidatedRequest, res: Response) => {
     const { jobId } = req.validatedParams;
+    const userId = req.user.id;
     
+    // Create user-specific service instance
+    const asyncScanService = await getUserScanService(userId);
     const job = await asyncScanService.getJobStatus(jobId);
     
     if (!job) {
@@ -99,7 +121,11 @@ jobRoutes.get('/results/:jobId',
 // GET /api/jobs/queue
 jobRoutes.get('/queue',
   requireAuth, 
-  asyncHandler(async (req:Request, res: Response) => {
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const userId = req.user.id;
+    
+    // Create user-specific service instance
+    const asyncScanService = await getUserScanService(userId);
     const queueInfo = asyncScanService.getQueueStats();
     
     const response: ApiResponse = {

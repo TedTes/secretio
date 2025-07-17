@@ -5,6 +5,7 @@ import { asyncHandler, createError } from '../middleware/errorHandler';
 import { scanRepositorySchema, scanMultipleSchema } from '../validation/schemas';
 import { ScanRepositoryRequest, ScanMultipleRequest, ApiResponse, ScanRepositoryResponse } from '../types/api';
 import { AsyncScanService } from '../services/asyncScan';
+import {GitHubService} from "../services/github";
 import {ValidatedRequest,AuthenticatedRequest} from "../types";
 import { requireAuth} from '../middleware/auth';
 import {getUserId,injectUserContext} from "../utils";
@@ -12,6 +13,24 @@ import {getUserId,injectUserContext} from "../utils";
 import { v4 as uuidv4 } from 'uuid';
 const scanRoutes = Router();
 
+// Helper function to get user-specific AsyncScanService
+const getUserScanService = async (userId: string): Promise<AsyncScanService> => {
+  // Get user's GitHub connection from database
+  const githubService = new GitHubService();
+  const githubConnection = await githubService.getUserGitHubConnection(userId);
+
+  if (!githubConnection) {
+    throw createError('GitHub account not connected', 400, 'GITHUB_NOT_CONNECTED');
+  }
+  const userGithubService = new GitHubService(githubConnection.access_token);
+  const isValid = await userGithubService.validateToken(githubConnection.access_token);
+  if (!isValid) {
+      // Remove invalid token from database
+  await githubService.removeUserGitHubToken(userId);
+    throw createError('GitHub token expired, please reconnect', 401, 'GITHUB_TOKEN_EXPIRED');
+  }
+return new AsyncScanService(githubConnection.access_token, userId);
+};
 // POST /api/scan/repository
 scanRoutes.post('/repository',
   requireAuth,
@@ -113,8 +132,10 @@ scanRoutes.post('/multiple',
       }
       console.log(`⏳ Queueing async scan for ${owner}/${repo}${branch ? `@${branch}` : ''} (user: ${userId || 'anonymous'})`);
     
-      const asyncScanService = new AsyncScanService(github_token,userId);
+     
       
+    const asyncScanService = await getUserScanService(userId);
+
 
       const job = await asyncScanService.queueScan({
         owner,

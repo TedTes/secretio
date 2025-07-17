@@ -1,11 +1,31 @@
 import { Router,Request, Response } from 'express';
-import { asyncHandler } from '../middleware/errorHandler';
+import { asyncHandler, createError } from '../middleware/errorHandler';
 import { AsyncScanService } from '../services/asyncScan';
+import {GitHubService} from "../services/github";
 import { dbService } from '../services/database';
 import { ApiResponse } from '../types/api';
 import { requireAuth, requireOwnership, requireAdmin } from '../middleware/auth';
 
 const userRoutes = Router();
+
+// Helper function to get user-specific AsyncScanService
+const getUserScanService = async (userId: string): Promise<AsyncScanService> => {
+  // Get user's GitHub connection from database
+  const githubService = new GitHubService();
+  const githubConnection = await githubService.getUserGitHubConnection(userId);
+
+  if (!githubConnection) {
+    throw createError('GitHub account not connected', 400, 'GITHUB_NOT_CONNECTED');
+  }
+  const userGithubService = new GitHubService(githubConnection.access_token);
+  const isValid = await userGithubService.validateToken(githubConnection.access_token);
+  if (!isValid) {
+      // Remove invalid token from database
+  await githubService.removeUserGitHubToken(userId);
+    throw createError('GitHub token expired, please reconnect', 401, 'GITHUB_TOKEN_EXPIRED');
+  }
+return new AsyncScanService(githubConnection.access_token, userId);
+};
 
 // GET /api/users/:userId/jobs
 userRoutes.get('/:userId/jobs',
@@ -14,7 +34,8 @@ userRoutes.get('/:userId/jobs',
     const { userId } = req.params;
     const limit = parseInt(req.query.limit as string) || 50;
 
-    const asyncScanService = new AsyncScanService();
+
+    const asyncScanService = await getUserScanService(userId);
     const jobs = await asyncScanService.getUserJobs(userId, limit);
 
     const response: ApiResponse = {
