@@ -7,6 +7,79 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+ALTER TABLE users 
+ADD COLUMN IF NOT EXISTS name TEXT,
+ADD COLUMN IF NOT EXISTS avatar_url TEXT,
+ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'user',
+ADD COLUMN IF NOT EXISTS subscription_tier TEXT DEFAULT 'free';
+
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_pkey;
+
+-- Add foreign key constraint to reference auth.users
+ALTER TABLE users 
+ADD CONSTRAINT users_id_fkey 
+FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+ALTER TABLE users ADD PRIMARY KEY (id);
+ALTER TABLE users ALTER COLUMN email SET NOT NULL;
+
+-- Function to handle new Supabase users
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.users (
+    id, 
+    email, 
+    name, 
+    avatar_url,
+    github_username
+  )
+  VALUES (
+    NEW.id,
+    NEW.email,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name'),
+    NEW.raw_user_meta_data->>'avatar_url',
+    CASE 
+      WHEN NEW.app_metadata->>'provider' = 'github' 
+      THEN NEW.raw_user_meta_data->>'user_name'
+      ELSE NULL 
+    END
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    email = EXCLUDED.email,
+    name = EXCLUDED.name,
+    avatar_url = EXCLUDED.avatar_url,
+    github_username = COALESCE(EXCLUDED.github_username, users.github_username),
+    updated_at = NOW();
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Create trigger
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+
+
+-- Enable RLS on users table
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+
+-- Create RLS policies
+CREATE POLICY "Users can view own data" 
+  ON users FOR SELECT 
+  USING (auth.uid() = id);
+
+CREATE POLICY "Users can update own data" 
+  ON users FOR UPDATE 
+  USING (auth.uid() = id);
+
+-- Allow the trigger to insert (system access)
+CREATE POLICY "System can insert users" 
+  ON users FOR INSERT 
+  WITH CHECK (true);
 -- Scan Jobs table
 CREATE TABLE IF NOT EXISTS scan_jobs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
