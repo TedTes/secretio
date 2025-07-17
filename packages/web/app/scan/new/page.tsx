@@ -196,10 +196,8 @@ export default function NewScanPage() {
       const result = await apiClient.startScan(
         owner,
         repoName,
-        selectedBranch,
-        apiClient.getRepoToken() || undefined
+        selectedBranch
       );
-
       // Redirect to scan results page
       router.push(`/scan/${result.jobId}`);
 

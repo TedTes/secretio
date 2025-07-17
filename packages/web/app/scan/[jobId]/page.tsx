@@ -46,7 +46,7 @@ export default function ScanResultsPage() {
   const loadScanData = async () => {
     try {
       setLoading(true);
-      
+
       // Get job status
       const jobData = await apiClient.getScanStatus(jobId);
       setJob(jobData);

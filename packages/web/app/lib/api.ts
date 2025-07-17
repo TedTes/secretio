@@ -86,7 +86,7 @@ class ApiClient {
           ...options,
           headers,
         });
-  
+      
         let data: ApiResponse<T>;
         
         try {
@@ -234,17 +234,15 @@ class ApiClient {
     }
   
     // Scan endpoints
-    async startScan(owner: string, repo: string, branch?: string, githubToken?: string): Promise<{ jobId: string }> {
+    async startScan(owner: string, repo: string, branch?: string): Promise<{ jobId: string }> {
       const response = await this.request<{ jobId: string }>('/api/scan/async', {
         method: 'POST',
         body: JSON.stringify({
           owner,
           repo,
-          branch,
-          github_token: githubToken,
+          branch
         }),
       });
-      
       if (!response.success || !response.data) {
         throw new Error('Failed to start scan');
       }
@@ -386,12 +384,7 @@ class ApiClient {
       return null;
     }
   }
-    // Get GitHub token for scan requests (vault-api handles this internally)
-    getRepoToken(): string | null {
-      // Token is stored server-side, frontend doesn't need it
-      // This method exists for compatibility but returns null
-      return null;
-    }
+
 
       // Get GitHub connection status from vault-api
   async getConnectionStatus(): Promise<GitHubConnectionStatus> {

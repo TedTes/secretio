@@ -121,11 +121,11 @@ scanRoutes.post('/multiple',
   );
 
 
-  scanRoutes.post('/async',
+scanRoutes.post('/async',
     requireAuth, injectUserContext,
     validateBody(scanRepositorySchema),
     asyncHandler(async (req: ValidatedRequest<ScanRepositoryRequest>, res: Response) => {
-      const { owner, repo, branch, github_token} = req.validatedBody;
+      const { owner, repo, branch} = req.validatedBody;
       const userId = getUserId(req);
       if(!userId) {
         throw createError('User Id must not be null');
@@ -140,8 +140,7 @@ scanRoutes.post('/multiple',
       const job = await asyncScanService.queueScan({
         owner,
         repo,
-        branch,
-        github_token
+        branch
       });
   
       const response: ApiResponse = {
