@@ -1,6 +1,6 @@
 import fetch from 'node-fetch';
 import { GitHubTree, GitHubRepository, GitHubFile } from '../types/github';
-
+import { supabase } from '../config/database';
 export class GitHubService {
   private baseUrl = 'https://api.github.com';
   private token?: string;
@@ -139,5 +139,158 @@ export class GitHubService {
 
   async getRateLimit(): Promise<any> {
     return this.makeRequest('/rate_limit');
+  }
+
+
+
+  async exchangeCodeForToken(code: string): Promise<{ access_token: string; token_type: string; scope: string }> {
+    const client_id = process.env.GITHUB_CLIENT_ID;
+    const client_secret = process.env.GITHUB_CLIENT_SECRET;
+    const url = 'https://github.com/login/oauth/access_token';
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        client_id,
+        client_secret,
+        code,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`GitHub token exchange failed: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    if (!data.access_token) {
+      throw new Error('No access token returned from GitHub');
+    }
+    return {
+      access_token: data.access_token,
+      token_type: data.token_type,
+      scope: data.scope,
+    };
+  }
+
+  async getGitHubUser(access_token: string): Promise<any> {
+    const response = await fetch('https://api.github.com/user', {
+      headers: {
+        'Authorization': `token ${access_token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'User-Agent': 'Secretio-Vault-API/1.0.0'
+      }
+    });
+  
+    if (!response.ok) {
+      throw new Error(`Failed to fetch GitHub user: ${response.status} ${response.statusText}`);
+    }
+  
+    return await response.json();
+  }
+  async getUserRepositories(
+    access_token: string,
+    options: { page?: number; per_page?: number; type?: string; sort?: string }
+  ): Promise<any[]> {
+    const params = new URLSearchParams({
+      page: String(options.page ?? 1),
+      per_page: String(options.per_page ?? 30),
+      type: options.type ?? 'all',
+      sort: options.sort ?? 'updated',
+    });
+  
+    const response = await fetch(`https://api.github.com/user/repos?${params.toString()}`, {
+      headers: {
+        'Authorization': `token ${access_token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'User-Agent': 'Secretio-Vault-API/1.0.0'
+      }
+    });
+  
+    if (!response.ok) {
+      throw new Error(`Failed to fetch repositories: ${response.status} ${response.statusText}`);
+    }
+  
+    return await response.json();
+  }
+
+  async getRepositoryBranches(access_token: string, repoFullName: string): Promise<any[]> {
+    const response = await fetch(`https://api.github.com/repos/${repoFullName}/branches`, {
+      headers: {
+        'Authorization': `token ${access_token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'User-Agent': 'Secretio-Vault-API/1.0.0'
+      }
+    });
+  
+    if (!response.ok) {
+      throw new Error(`Failed to fetch branches: ${response.status} ${response.statusText}`);
+    }
+  
+    return await response.json();
+  }
+
+
+
+  async getUserGitHubConnection(userId: string): Promise<any> {
+    const { data, error } = await supabase
+      .from('user_github_connections')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+  
+    if (error && error.code !== 'PGRST116') {
+      throw new Error(`Database error: ${error.message}`);
+    }
+  
+    return data;
+  }
+  async validateToken(access_token: string): Promise<boolean> {
+    // Simple check: try to fetch the authenticated user
+    const response = await fetch('https://api.github.com/user', {
+      headers: {
+        'Authorization': `token ${access_token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'User-Agent': 'Secretio-Vault-API/1.0.0'
+      }
+    });
+    return response.ok;
+  }
+
+  async removeUserGitHubToken(userId: string): Promise<void> {
+    const { error } = await supabase
+      .from('user_github_connections')
+      .delete()
+      .eq('user_id', userId);
+  
+    if (error) {
+      throw new Error(`Database error: ${error.message}`);
+    }
+  }
+
+  async storeUserGitHubToken(userId: string, tokenData: any): Promise<void> {
+    const { error } = await supabase
+      .from('user_github_connections')
+      .upsert({
+        user_id: userId,
+        access_token: tokenData.access_token,
+        token_type: tokenData.token_type,
+        scope: tokenData.scope,
+        github_username: tokenData.github_username,
+        github_user_id: tokenData.github_user_id,
+        github_avatar_url: tokenData.github_avatar_url,
+        github_name: tokenData.github_name,
+        public_repos: tokenData.public_repos,
+        private_repos: tokenData.private_repos,
+        connected_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+  
+    if (error) {
+      throw new Error(`Database error: ${error.message}`);
+    }
   }
 }
