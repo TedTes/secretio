@@ -78,3 +78,67 @@ CREATE POLICY "Users can view own stats" ON scan_stats
   FOR SELECT USING (
     job_id IN (SELECT id FROM scan_jobs WHERE user_id = auth.uid())
   );
+
+
+
+-- github_connections table
+
+-- Create user_github_connections table
+CREATE TABLE IF NOT EXISTS user_github_connections (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  access_token TEXT NOT NULL,
+  token_type VARCHAR(20) DEFAULT 'bearer',
+  scope TEXT,
+  github_username VARCHAR(255) NOT NULL,
+  github_user_id BIGINT NOT NULL,
+  github_avatar_url TEXT,
+  github_name TEXT,
+  public_repos INTEGER DEFAULT 0,
+  private_repos INTEGER DEFAULT 0,
+  connected_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  -- Constraints
+  UNIQUE(user_id), -- One GitHub connection per user
+  UNIQUE(github_user_id) -- One user per GitHub account
+);
+
+-- Create indexes
+CREATE INDEX IF NOT EXISTS idx_user_github_connections_user_id ON user_github_connections(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_github_connections_github_user_id ON user_github_connections(github_user_id);
+CREATE INDEX IF NOT EXISTS idx_user_github_connections_github_username ON user_github_connections(github_username);
+
+-- Enable RLS
+ALTER TABLE user_github_connections ENABLE ROW LEVEL SECURITY;
+
+-- Create RLS policies
+CREATE POLICY  "Users can view own GitHub connection" 
+  ON user_github_connections FOR SELECT 
+  USING (auth.uid() = user_id);
+
+CREATE POLICY  "Users can insert own GitHub connection" 
+  ON user_github_connections FOR INSERT 
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY  "Users can update own GitHub connection" 
+  ON user_github_connections FOR UPDATE 
+  USING (auth.uid() = user_id);
+
+CREATE POLICY  "Users can delete own GitHub connection" 
+  ON user_github_connections FOR DELETE 
+  USING (auth.uid() = user_id);
+
+-- Add updated_at trigger
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER update_user_github_connections_updated_at 
+  BEFORE UPDATE ON user_github_connections 
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
