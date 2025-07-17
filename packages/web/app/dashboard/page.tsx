@@ -163,8 +163,8 @@ export default function Dashboard() {
       Scan Repository
     </button>
   </div>
-
-  {/* Rest of your existing vault upgrade card stays the same */}
+  
+ {/* Vault Upgrade Card */}
   <div className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-500/20 rounded-lg p-6">
     <h2 className="text-xl font-bold text-white mb-4">🔐 Secure Vault</h2>
     <p className="text-gray-300 mb-4">

@@ -17,7 +17,6 @@ export default function GitHubCallbackPage() {
         const state = searchParams.get('state');
         const error = searchParams.get('error');
         const errorDescription = searchParams.get('error_description');
-
         // Check for OAuth errors
         if (error) {
           console.error('GitHub OAuth error:', error, errorDescription);
@@ -30,7 +29,18 @@ export default function GitHubCallbackPage() {
           return;
         }
 
-        // Verify state parameter
+
+        if(!code || state !== 'repo-access') {
+            setStatus('error');
+           let message =  !code ? 'No authorization code received' : 'Invalid OAuth state';
+           setMessage(message);
+           setTimeout(() => {
+            router.push('/scan/new');
+          }, 3000);
+          return;
+        }
+
+        // Verify state parameter & Check for authorization code
         if (state !== 'repo-access') {
           setStatus('error');
           setMessage('Invalid OAuth state');
@@ -40,20 +50,10 @@ export default function GitHubCallbackPage() {
           return;
         }
 
-        // Check for authorization code
-        if (!code) {
-          setStatus('error');
-          setMessage('No authorization code received');
-          setTimeout(() => {
-            router.push('/scan/new');
-          }, 3000);
-          return;
-        }
-
         setMessage('Exchanging authorization code...');
 
         // Exchange code for access token
-        // await githubService.exchangeCodeForToken(code);
+        await apiClient.exchangeCodeForToken(code,state);
 
         setMessage('Loading GitHub user data...');
 
