@@ -68,3 +68,39 @@ export interface User {
     masked_value: string;
     created_at: string;
   }
+
+  export interface GitHubRepo {
+    id: number;
+    name: string;
+    full_name: string;
+    private: boolean;
+    default_branch: string;
+    description?: string;
+    updated_at: string;
+    language?: string;
+    stargazers_count: number;
+    size: number;
+    html_url: string;
+  }
+  
+  export interface GitHubUser {
+    login: string;
+    name: string;
+    avatar_url: string;
+    public_repos: number;
+    email?: string;
+  }
+  export interface GitHubBranch {
+    name: string;
+    commit: {
+      sha: string;
+    };
+    protected: boolean;
+  }
+  export interface GitHubConnectionStatus {
+    connected?: boolean;
+    user?: GitHubUser;
+    message?: string;
+    success?:string;
+    error?:object | string;
+  }
