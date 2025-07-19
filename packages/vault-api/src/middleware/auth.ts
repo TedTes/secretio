@@ -1,6 +1,6 @@
 // packages/vault-api/src/middleware/auth.ts
 import { Request, Response, NextFunction } from 'express';
-import { supabase } from '../config/database';
+import {createSupabaseClientWithToken,supabase } from '../config/database';
 import { createError } from './errorHandler';
 import { ErrorResponse } from '../types/api';
 import {AuthenticatedRequest} from "../types/auth";
@@ -38,10 +38,10 @@ export async function validateJWT(req: Request, res: Response, next: NextFunctio
       res.status(401).json(errorResponse);
       return;
     }
-
+     const supabase = createSupabaseClientWithToken(token);
+ 
     // Validate token with Supabase
     const { data: { user }, error } = await supabase.auth.getUser(token);
-    
     if (error || !user) {
       let errorMessage = 'Invalid authentication token';
       let statusCode = 401;
@@ -65,12 +65,6 @@ export async function validateJWT(req: Request, res: Response, next: NextFunctio
       res.status(statusCode).json(errorResponse);
       return;
     }
-
-    // Create authenticated Supabase client with user context
-    const authenticatedSupabase = supabase.auth.setSession({
-      access_token: token,
-      refresh_token: '', // Not needed for API-only access
-    });
 
     // Add user context to request
     (req as AuthenticatedRequest).user = {

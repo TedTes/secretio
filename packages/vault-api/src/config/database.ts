@@ -9,6 +9,20 @@ if (!supabaseUrl || !supabaseKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
+export function createSupabaseClientWithToken(token: string) {
+  return createClient(
+    supabaseUrl!,
+    supabaseKey!,
+    {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    }
+  );
+}
+
 // Database types
 export interface DbUser {
   id: string;
