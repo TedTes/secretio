@@ -7,14 +7,15 @@ import {ValidatedRequest,ApiResponse,AuthenticatedRequest} from "../types";
 import { requireJobOwnership } from '../utils';
 import { requireAuth  } from '../middleware/auth';
 import Joi from 'joi';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 const jobRoutes = Router();
 
 // Helper function to get user-specific AsyncScanService
-const getUserScanService = async (userId: string): Promise<AsyncScanService> => {
+const getUserScanService = async (userId: string,supabase:SupabaseClient): Promise<AsyncScanService> => {
     // Get user's GitHub connection from database
     const githubService = new GitHubService();
-    const githubConnection = await githubService.getUserGitHubConnection(userId);
+    const githubConnection = await githubService.getUserGitHubConnection(userId,supabase);
   
     if (!githubConnection) {
       throw createError('GitHub account not connected', 400, 'GITHUB_NOT_CONNECTED');
@@ -23,7 +24,7 @@ const getUserScanService = async (userId: string): Promise<AsyncScanService> => 
     const isValid = await userGithubService.validateToken(githubConnection.access_token);
     if (!isValid) {
         // Remove invalid token from database
-    await githubService.removeUserGitHubToken(userId);
+    await githubService.removeUserGitHubToken(userId,supabase);
       throw createError('GitHub token expired, please reconnect', 401, 'GITHUB_TOKEN_EXPIRED');
     }
   return new AsyncScanService(githubConnection.access_token, userId);
@@ -42,11 +43,12 @@ jobRoutes.get('/status/:jobId',
   requireAuth, requireJobOwnership(),
   validateParams(jobIdSchema),
   asyncHandler(async (req: AuthenticatedRequest & ValidatedRequest, res: Response) => {
+    const supabase = (req as AuthenticatedRequest).supabaseClient;
     const { jobId } = req.validatedParams;
     const userId = req.user.id;
     
     // Create user-specific service instance
-    const asyncScanService = await getUserScanService(userId);
+    const asyncScanService = await getUserScanService(userId,supabase);
     const job = await asyncScanService.getJobStatus(jobId);
     
     if (!job) {
@@ -79,9 +81,9 @@ jobRoutes.get('/results/:jobId',
   asyncHandler(async (req: AuthenticatedRequest & ValidatedRequest, res: Response) => {
     const { jobId } = req.validatedParams;
     const userId = req.user.id;
-    
+    const supabase = (req as AuthenticatedRequest).supabaseClient;
     // Create user-specific service instance
-    const asyncScanService = await getUserScanService(userId);
+    const asyncScanService = await getUserScanService(userId,supabase);
     const job = await asyncScanService.getJobStatus(jobId);
     
     if (!job) {
@@ -123,9 +125,9 @@ jobRoutes.get('/queue',
   requireAuth, 
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const userId = req.user.id;
-    
+    const supabase = (req as AuthenticatedRequest).supabaseClient;
     // Create user-specific service instance
-    const asyncScanService = await getUserScanService(userId);
+    const asyncScanService = await getUserScanService(userId,supabase);
     const queueInfo = asyncScanService.getQueueStats();
     
     const response: ApiResponse = {

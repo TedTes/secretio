@@ -3,16 +3,17 @@ import { asyncHandler, createError } from '../middleware/errorHandler';
 import { AsyncScanService } from '../services/asyncScan';
 import {GitHubService} from "../services/github";
 import { dbService } from '../services/database';
-import { ApiResponse } from '../types/api';
+import { ApiResponse,AuthenticatedRequest } from '../types';
 import { requireAuth, requireOwnership, requireAdmin } from '../middleware/auth';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 const userRoutes = Router();
 
 // Helper function to get user-specific AsyncScanService
-const getUserScanService = async (userId: string): Promise<AsyncScanService> => {
+const getUserScanService = async (userId: string,supabase:SupabaseClient): Promise<AsyncScanService> => {
   // Get user's GitHub connection from database
   const githubService = new GitHubService();
-  const githubConnection = await githubService.getUserGitHubConnection(userId);
+  const githubConnection = await githubService.getUserGitHubConnection(userId,supabase);
 
   if (!githubConnection) {
     throw createError('GitHub account not connected', 400, 'GITHUB_NOT_CONNECTED');
@@ -21,7 +22,7 @@ const getUserScanService = async (userId: string): Promise<AsyncScanService> => 
   const isValid = await userGithubService.validateToken(githubConnection.access_token);
   if (!isValid) {
       // Remove invalid token from database
-  await githubService.removeUserGitHubToken(userId);
+  await githubService.removeUserGitHubToken(userId,supabase);
     throw createError('GitHub token expired, please reconnect', 401, 'GITHUB_TOKEN_EXPIRED');
   }
 return new AsyncScanService(githubConnection.access_token, userId);
@@ -33,9 +34,9 @@ userRoutes.get('/:userId/jobs',
   asyncHandler(async (req:Request, res: Response) => {
     const { userId } = req.params;
     const limit = parseInt(req.query.limit as string) || 50;
+    const supabase = (req as AuthenticatedRequest).supabaseClient;
 
-
-    const asyncScanService = await getUserScanService(userId);
+    const asyncScanService = await getUserScanService(userId,supabase);
     const jobs = await asyncScanService.getUserJobs(userId, limit);
 
     const response: ApiResponse = {

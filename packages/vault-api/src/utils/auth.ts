@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import {  getAuthenticatedUser } from '../middleware/auth';
 import { hasPermission } from '../config/auth';
 import {Permission, User,ErrorResponse,AuthenticatedRequest} from "../types/";
+import {dbService} from '../services/database'
 
 
 /**
@@ -112,9 +113,9 @@ export function requirePermission(permission: Permission, resourceGetter?: (req:
  */
 export function requireJobOwnership() {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const user = getAuthenticatedUser(req);
+    const supabase = (req as AuthenticatedRequest).supabaseClient;
+    const { data: { user }, error } = await supabase.auth.getUser();
     const { jobId } = req.params;
-    
     if (!user) {
       const errorResponse: ErrorResponse = {
         success: false,
@@ -132,10 +133,7 @@ export function requireJobOwnership() {
     }
     
     try {
-      // Import here to avoid circular dependency
-      const { dbService } = await import('../services/database');
-      const job = await dbService.getScanJob(jobId);
-      
+      const job = await dbService.getScanJob(jobId,supabase);
       if (!job) {
         const errorResponse: ErrorResponse = {
           success: false,

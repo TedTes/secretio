@@ -1,6 +1,7 @@
 import fetch from 'node-fetch';
 import { GitHubTree, GitHubRepository, GitHubFile } from '../types/github';
 import { supabase } from '../config/database';
+import { SupabaseClient } from '@supabase/supabase-js';
 export class GitHubService {
   private baseUrl = 'https://api.github.com';
   private token?: string;
@@ -235,7 +236,7 @@ export class GitHubService {
 
 
 
-  async getUserGitHubConnection(userId: string): Promise<any> {
+  async getUserGitHubConnection(userId: string,supabase:SupabaseClient): Promise<any> {
     const { data, error } = await supabase
       .from('user_github_connections')
       .select('*')
@@ -260,7 +261,7 @@ export class GitHubService {
     return response.ok;
   }
 
-  async removeUserGitHubToken(userId: string): Promise<void> {
+  async removeUserGitHubToken(userId: string,supabase:SupabaseClient): Promise<void> {
     const { error } = await supabase
       .from('user_github_connections')
       .delete()
@@ -271,7 +272,7 @@ export class GitHubService {
     }
   }
 
-  async storeUserGitHubToken(userId: string, tokenData: any): Promise<void> {
+  async storeUserGitHubToken(userId: string, tokenData: any,supabase: SupabaseClient): Promise<void> {
     const { error } = await supabase
       .from('user_github_connections')
       .upsert({

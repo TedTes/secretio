@@ -11,13 +11,14 @@ import { requireAuth} from '../middleware/auth';
 import {getUserId,injectUserContext} from "../utils";
 
 import { v4 as uuidv4 } from 'uuid';
+import { SupabaseClient } from '@supabase/supabase-js';
 const scanRoutes = Router();
 
 // Helper function to get user-specific AsyncScanService
-const getUserScanService = async (userId: string): Promise<AsyncScanService> => {
+const getUserScanService = async (userId: string,supabase:SupabaseClient): Promise<AsyncScanService> => {
   // Get user's GitHub connection from database
   const githubService = new GitHubService();
-  const githubConnection = await githubService.getUserGitHubConnection(userId);
+  const githubConnection = await githubService.getUserGitHubConnection(userId,supabase);
 
   if (!githubConnection) {
     throw createError('GitHub account not connected', 400, 'GITHUB_NOT_CONNECTED');
@@ -26,7 +27,7 @@ const getUserScanService = async (userId: string): Promise<AsyncScanService> => 
   const isValid = await userGithubService.validateToken(githubConnection.access_token);
   if (!isValid) {
       // Remove invalid token from database
-  await githubService.removeUserGitHubToken(userId);
+  await githubService.removeUserGitHubToken(userId,supabase);
     throw createError('GitHub token expired, please reconnect', 401, 'GITHUB_TOKEN_EXPIRED');
   }
 return new AsyncScanService(githubConnection.access_token, userId);
@@ -124,7 +125,9 @@ scanRoutes.post('/multiple',
 scanRoutes.post('/async',
     requireAuth, injectUserContext,
     validateBody(scanRepositorySchema),
-    asyncHandler(async (req: ValidatedRequest<ScanRepositoryRequest>, res: Response) => {
+    asyncHandler(async (req: AuthenticatedRequest & ValidatedRequest<ScanRepositoryRequest>, res: Response) => {
+    const supabase = (req as AuthenticatedRequest).supabaseClient;
+
       const { owner, repo, branch} = req.validatedBody;
       const userId = getUserId(req);
       if(!userId) {
@@ -134,7 +137,7 @@ scanRoutes.post('/async',
     
      
       
-    const asyncScanService = await getUserScanService(userId);
+    const asyncScanService = await getUserScanService(userId,supabase);
 
 
       const job = await asyncScanService.queueScan({

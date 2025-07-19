@@ -1,6 +1,8 @@
 import { supabase, DbScanJob, DbScanResult, DbScanStats, DbUser } from '../config/database';
 import { ScanJob, JobStatus, JobProgress } from '../types/jobs';
 import { ScanResult } from '@secretio/shared';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { createError } from '../middleware/errorHandler';
 
 export class DatabaseService {
   
@@ -89,16 +91,43 @@ export class DatabaseService {
     if (error) throw new Error(`Failed to update job progress: ${error.message}`);
   }
 
-  async getScanJob(jobId: string): Promise<DbScanJob | null> {
+  async getScanJob(jobId: string, supabase: SupabaseClient): Promise<DbScanJob | null> {
+    // 1. Check if user is authenticated
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+  
+    if (!user) {
+      console.log('❌ No authenticated user');
+      return null;
+    }
+
+    if(authError) {
+      throw createError(JSON.stringify(authError), 401, 'AUTHENTICATION_FAILED');
+    }
+  
+    // 3. Try the query
     const { data, error } = await supabase
       .from('scan_jobs')
       .select('*')
       .eq('id', jobId)
       .single();
-
+  
+    console.log('📊 Query result:', { data, error });
+    
+    // 4. Additional debugging
+    if (error) {
+      console.log('🔍 Error details:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      });
+    }
+  
     if (error && error.code !== 'PGRST116') {
       throw new Error(`Failed to get scan job: ${error.message}`);
     }
+    
     return data;
   }
 
