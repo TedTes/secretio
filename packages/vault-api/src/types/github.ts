@@ -33,6 +33,7 @@ export interface GitHubFile {
     };
     private: boolean;
     default_branch: string;
+    size: number;
   }
   
   export interface ScanRequest {

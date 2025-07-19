@@ -3,9 +3,15 @@ import { jobQueue } from './jobQueue';
 import { ScanRepositoryRequest } from '../types/api';
 import { ScanJob } from '../types/jobs';
 import { dbService } from './database';
+import { createClient ,SupabaseClient} from '@supabase/supabase-js';
+
+
 export class AsyncScanService {
   private scanService: ScanService;
   private userId: string;
+  private supabase: SupabaseClient;
+  private static  supabaseUrl = process.env.SUPABASE_URL;
+  private static  supabaseKey = process.env.SUPABASE_ANON_KEY;
   constructor(githubToken: string, userId: string) {
     if (!githubToken) {
       throw new Error('GitHub token is required for AsyncScanService');
@@ -14,6 +20,10 @@ export class AsyncScanService {
     if (!userId) {
       throw new Error('User ID is required for AsyncScanService');
     }
+    if (!AsyncScanService.supabaseUrl || !AsyncScanService.supabaseKey) {
+      throw new Error('Missing Supabase environment variables');
+    }
+     this.supabase = createClient(AsyncScanService.supabaseUrl,AsyncScanService.supabaseKey);
     this.userId = userId;
     this.scanService = new ScanService(githubToken);
     
@@ -78,7 +88,7 @@ export class AsyncScanService {
   }
 
   getJobStatus(jobId: string): Promise<ScanJob | undefined> {
-    return jobQueue.getJob(jobId);
+    return jobQueue.getJob(jobId,this.supabase);
   }
 
   async getJobWithResults(jobId: string): Promise<{
@@ -86,7 +96,7 @@ export class AsyncScanService {
     results?: any[];
     stats?: any;
   }> {
-    const job = await jobQueue.getJob(jobId);
+    const job = await jobQueue.getJob(jobId,this.supabase);
     
     if (!job || job.status !== 'completed') {
       return { job };

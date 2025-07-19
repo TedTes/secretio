@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ScanJob, JobStatus, JobProgress, JobQueueStats } from '../types/jobs';
 import { ScanRepositoryRequest } from '../types/api';
 import { dbService } from './database';
+import { SupabaseClient } from '@supabase/supabase-js';
 export class JobQueue extends EventEmitter {
   private jobs: Map<string, ScanJob> = new Map();
   private runningJobs: Set<string> = new Set();
@@ -37,14 +38,14 @@ export class JobQueue extends EventEmitter {
     return job;
   }
 
-  async getJob(jobId: string): Promise<ScanJob | undefined> {
+  async getJob(jobId: string,supabase:SupabaseClient): Promise<ScanJob | undefined> {
     // Try memory first
     let job = this.jobs.get(jobId);
     
     if (!job) {
       // Try database
       try {
-        const dbJob = await dbService.getScanJob(jobId);
+        const dbJob = await dbService.getScanJob(jobId,supabase);
         if (dbJob) {
           job = this.convertDbJobToScanJob(dbJob);
           this.jobs.set(jobId, job); // Cache in memory
