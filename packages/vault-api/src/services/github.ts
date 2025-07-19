@@ -26,12 +26,14 @@ export class GitHubService {
         throw new Error('Repository tree not found');
       }
 
+      const repoInfo = await this.getRepository(owner, repo);
+      const repoSize = repoInfo.size || 0; // Size in KB
       // Filter for files only and scannable types
       return tree.tree
         .filter(item => item.type === 'blob') // Only files, not directories
         .filter(item => this.shouldScanFile(item.path))
         .filter(item => (item.size || 0) <= 1048576) // 1MB limit
-        .slice(0, 1000) // Limit to 1000 files
+        .slice(0, Math.min(500, Math.floor(5000000 / repoSize))) // Dynamic limit based on repo size
         .map(item => ({
           path: item.path,
           name: item.path.split('/').pop() || '',
