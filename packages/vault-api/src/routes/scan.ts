@@ -135,7 +135,17 @@ scanRoutes.post('/async',
       }
       console.log(`⏳ Queueing async scan for ${owner}/${repo}${branch ? `@${branch}` : ''} (user: ${userId || 'anonymous'})`);
     
-     
+       // Check rate limit before starting scan
+       const scanService = new ScanService(req.body.github_token);
+  const rateLimit = await scanService.getRateLimit();
+  
+  if (rateLimit.remaining < 100) {
+    return res.status(429).json({
+      success: false,
+      error: `Rate limit too low (${rateLimit.remaining} remaining). Resets at ${new Date(rateLimit.reset * 1000).toISOString()}`,
+      retryAfter: rateLimit.reset
+    });
+  }
       
     const asyncScanService = await getUserScanService(userId,supabase);
 
