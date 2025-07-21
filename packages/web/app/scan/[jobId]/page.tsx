@@ -36,6 +36,10 @@ export default function ScanResultsPage() {
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [storingKeys, setStoringKeys] = useState<Set<number>>(new Set());
 
+  const [storedKeys, setStoredKeys] = useState<Set<string>>(new Set());
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [lastStoredKey, setLastStoredKey] = useState<{ keyName: string; service: string } | null>(null);
+
   // Real-time polling for job status
   const pollJobStatus = useCallback(async () => {
     if (!jobId) return;
@@ -145,6 +149,8 @@ export default function ScanResultsPage() {
   
       const data = await response.json();
       
+      setStoredKeys(prev => new Set([...prev, keyName]));
+      setLastStoredKey({ keyName, service: result.service });
       // Remove the result from the list (optimistic update)
       if (resultsData) {
         const newResults = resultsData.results.filter((_, i) => i !== index);
@@ -157,9 +163,9 @@ export default function ScanResultsPage() {
           }
         });
       }
-  
-      // Show success message
-      alert(`✅ API key stored securely in vault as "${keyName}"`);
+
+   // Show success modal
+   setShowSuccessModal(true);
       
     } catch (error) {
       console.error('Failed to store key:', error);
@@ -673,6 +679,116 @@ export default function ScanResultsPage() {
           className="flex-1 bg-slate-700 hover:bg-slate-600 px-6 py-3 rounded-lg text-white transition-colors"
         >
           Maybe Later
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+   {/* success celebration modal */}
+{showSuccessModal && lastStoredKey && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="bg-slate-800 rounded-lg border border-gray-700 p-8 w-full max-w-lg mx-4">
+      {/* Success Animation */}
+      <div className="text-center mb-6">
+        <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+          <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <h3 className="text-2xl font-bold text-white mb-2">🎉 Key Secured!</h3>
+        <p className="text-gray-300">
+          Your <span className="text-blue-400 font-mono">{lastStoredKey.service}</span> API key is now safely stored in your encrypted vault.
+        </p>
+      </div>
+
+      {/* Success Details */}
+      <div className="bg-green-600/10 border border-green-500/20 rounded-lg p-4 mb-6">
+        <h4 className="font-bold text-green-400 mb-3">✅ What happened:</h4>
+        <ul className="text-sm text-gray-300 space-y-2">
+          <li>• Key encrypted with AES-256 encryption</li>
+          <li>• Stored as: <code className="bg-slate-700 px-1 rounded text-blue-400">{lastStoredKey.keyName}</code></li>
+          <li>• Removed from your exposed credentials list</li>
+          <li>• Ready for secure application access</li>
+        </ul>
+      </div>
+
+      {/* Next Steps */}
+      <div className="bg-blue-600/10 border border-blue-500/20 rounded-lg p-4 mb-6">
+        <h4 className="font-bold text-blue-400 mb-3">🚀 Next steps:</h4>
+        <ul className="text-sm text-gray-300 space-y-2">
+          <li>• Replace hardcoded keys in your source code</li>
+          <li>• Use <code className="bg-slate-700 px-1 rounded">vault.getKey('{lastStoredKey.keyName}')</code></li>
+          <li>• Set up your VAULT_TOKEN environment variable</li>
+          <li>• Deploy your secure application</li>
+        </ul>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex space-x-3">
+        <button
+          onClick={() => {
+            // Copy integration snippet
+            const snippet = `const ${lastStoredKey.service.replace(/_/g, '')}Key = await vault.getKey('${lastStoredKey.keyName}');`;
+            navigator.clipboard.writeText(snippet);
+            alert('Integration code copied to clipboard!');
+          }}
+          className="flex-1 bg-blue-600 hover:bg-blue-700 px-4 py-3 rounded-lg text-white font-semibold transition-colors"
+        >
+          📋 Copy Integration Code
+        </button>
+        <button
+          onClick={() => router.push('/vault')}
+          className="flex-1 bg-green-600 hover:bg-green-700 px-4 py-3 rounded-lg text-white font-semibold transition-colors"
+        >
+          🔐 View Vault
+        </button>
+        <button 
+          onClick={() => {
+            setShowSuccessModal(false);
+            setLastStoredKey(null);
+          }}
+          className="px-4 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg text-white transition-colors"
+        >
+          Continue
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* Add completion celebration when all keys are stored */}
+{resultsData && resultsData.stats.keys_found === 0 && storedKeys.size > 0 && (
+  <div className="bg-gradient-to-r from-green-600/20 to-blue-600/20 border border-green-500/30 rounded-lg p-6 mb-8">
+    <div className="text-center">
+      <div className="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+        <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+      <h3 className="text-2xl font-bold text-white mb-3">🎊 Repository Secured!</h3>
+      <p className="text-gray-300 mb-4">
+        Congratulations! You've successfully secured <strong>{storedKeys.size}</strong> API keys. 
+        Your repository is now free of exposed credentials.
+      </p>
+      
+      <div className="flex justify-center space-x-4">
+        <button
+          onClick={() => router.push('/vault')}
+          className="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg text-white font-semibold transition-colors"
+        >
+          🔐 Manage Vault
+        </button>
+        <button
+          onClick={() => router.push('/scan/new')}
+          className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg text-white font-semibold transition-colors"
+        >
+          📡 Scan Another Repo
+        </button>
+        <button
+          onClick={() => router.push('/dashboard')}
+          className="bg-slate-700 hover:bg-slate-600 px-6 py-3 rounded-lg text-white transition-colors"
+        >
+          🏠 Dashboard
         </button>
       </div>
     </div>
