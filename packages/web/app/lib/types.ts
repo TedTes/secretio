@@ -67,6 +67,7 @@ export interface User {
     description: string;
     masked_value: string;
     created_at: string;
+    match:string;
   }
 
   export interface GitHubRepo {

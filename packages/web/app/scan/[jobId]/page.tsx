@@ -34,6 +34,7 @@ export default function ScanResultsPage() {
   const [showVaultModal, setShowVaultModal] = useState(false);
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  const [storingKeys, setStoringKeys] = useState<Set<number>>(new Set());
 
   // Real-time polling for job status
   const pollJobStatus = useCallback(async () => {
@@ -116,6 +117,61 @@ export default function ScanResultsPage() {
     };
   }, [pollingInterval]);
 
+  const handleStoreInVault = async (result: ScanResult, index: number) => {
+    try {
+      setStoringKeys(prev => new Set([...prev, index]));
+      
+      // Generate a user-friendly key name
+      const keyName = `${result.service}_${Date.now()}`;
+      
+      // Call vault API to store the key
+      const response = await fetch('/api/vault/keys', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          keyName,
+          service: result.service,
+          value: result.match, // The actual API key value
+          environment: 'production'
+        })
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to store key in vault');
+      }
+  
+      const data = await response.json();
+      
+      // Remove the result from the list (optimistic update)
+      if (resultsData) {
+        const newResults = resultsData.results.filter((_, i) => i !== index);
+        setResultsData({
+          ...resultsData,
+          results: newResults,
+          stats: {
+            ...resultsData.stats,
+            keys_found: newResults.length
+          }
+        });
+      }
+  
+      // Show success message
+      alert(`✅ API key stored securely in vault as "${keyName}"`);
+      
+    } catch (error) {
+      console.error('Failed to store key:', error);
+      alert('❌ Failed to store key in vault. Please try again.');
+    } finally {
+      setStoringKeys(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(index);
+        return newSet;
+      });
+    }
+  };
   const loadScanData = async () => {
     try {
       setLoading(true);
@@ -154,15 +210,7 @@ export default function ScanResultsPage() {
     }
   };
 
-  const handleStoreInVault = async (result: ScanResult) => {
-    try {
-      // TODO: Implement vault storage
-      console.log('🔐 Storing in vault:', result);
-      alert(`Would store ${result.service} key in vault`);
-    } catch (err) {
-      console.error('❌ Vault storage error:', err);
-    }
-  };
+
 
   const handleIgnoreResult = async (result: ScanResult, index: number) => {
     try {
@@ -182,6 +230,7 @@ export default function ScanResultsPage() {
       }
     } catch (err) {
       console.error('❌ Ignore error:', err);
+      alert('Failed to ignore result');
     }
   };
 
@@ -557,14 +606,32 @@ export default function ScanResultsPage() {
               {result.masked_value}
             </code>
             </td>
-            <td className="px-6 py-4 whitespace-nowrap text-sm">
-            <button className="text-blue-400 hover:text-blue-300 mr-4">
-              Fix
-            </button>
-            <button className="text-gray-400 hover:text-gray-300">
-              Ignore
-            </button>
-            </td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
+              <button 
+                onClick={() => handleStoreInVault(result, index)}
+                disabled={storingKeys.has(index)}
+                className={`px-3 py-1 rounded text-white text-xs transition-colors ${
+                  storingKeys.has(index)
+                    ? 'bg-gray-600 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700'
+                }`}
+              >
+                {storingKeys.has(index) ? (
+                  <>
+                    <div className="animate-spin rounded-full h-3 w-3 border-b border-white inline-block mr-1"></div>
+                    Storing...
+                  </>
+                ) : (
+                  '🔐 Store'
+                )}
+              </button>
+              <button 
+                onClick={() => handleIgnoreResult(result, index)}
+                className="bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-white text-xs transition-colors"
+              >
+                Ignore
+              </button>
+              </td>
             </tr>
             ))}
             </tbody>
