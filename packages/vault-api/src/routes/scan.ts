@@ -15,7 +15,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 const scanRoutes = Router();
 
 // Helper function to get user-specific AsyncScanService
-const getUserScanService = async (userId: string,supabase:SupabaseClient): Promise<AsyncScanService> => {
+const getUserScanService = async (userId: string,owner:string, repo: string, supabase:SupabaseClient): Promise<AsyncScanService> => {
   // Get user's GitHub connection from database
   const githubService = new GitHubService();
   const githubConnection = await githubService.getUserGitHubConnection(userId,supabase);
@@ -30,7 +30,17 @@ const getUserScanService = async (userId: string,supabase:SupabaseClient): Promi
   await githubService.removeUserGitHubToken(userId,supabase);
     throw createError('GitHub token expired, please reconnect', 401, 'GITHUB_TOKEN_EXPIRED');
   }
-return new AsyncScanService(githubConnection.access_token, userId);
+  const repoInfo = await userGithubService.getRepository(owner, repo);
+  console.log("test output");
+  console.log(repoInfo);
+  if ((repoInfo.size || 0) > 50000) { // 50MB limit
+    throw createError('Repository too large (${Math.round((repoInfo.size || 0) / 1024)}MB). Please try a smaller repository (under 50MB).',
+      400,
+      'REPO_TOO_LARGE'
+    )
+  }
+
+  return new AsyncScanService(githubConnection.access_token, userId);
 };
 // POST /api/scan/repository
 scanRoutes.post('/repository',
@@ -134,10 +144,10 @@ scanRoutes.post('/async',
         throw createError('User Id must not be null');
       }
       console.log(`⏳ Queueing async scan for ${owner}/${repo}${branch ? `@${branch}` : ''} (user: ${userId || 'anonymous'})`);
-    
-       // Check rate limit before starting scan
-       const scanService = new ScanService(req.body.github_token);
-  const rateLimit = await scanService.getRateLimit();
+   
+    // Check rate limit before starting scan
+    const scanService = new ScanService(req.body.github_token);
+    const rateLimit = await scanService.getRateLimit();
   
   if (rateLimit.remaining < 100) {
     return res.status(429).json({
@@ -147,7 +157,7 @@ scanRoutes.post('/async',
     });
   }
       
-    const asyncScanService = await getUserScanService(userId,supabase);
+    const asyncScanService = await getUserScanService(userId,owner, repo, supabase);
 
 
       const job = await asyncScanService.queueScan({
