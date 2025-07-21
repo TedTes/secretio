@@ -168,23 +168,6 @@ export function requireJobOwnership() {
 }
 
 /**
- * Middleware to inject user context into request body/params
- */
-export function injectUserContext(req: Request, res: Response, next: NextFunction): void {
-  const user = getAuthenticatedUser(req);
-  
-  if (user) {
-    // Add user ID to request for database operations
-    req.body.user_id = user.id;
-    
-    // Add to AuthenticatedRequest for type safety
-    (req as AuthenticatedRequest).user = user;
-  }
-  
-  next();
-}
-
-/**
  * Rate limiting for authenticated users
  */
 export function authRateLimit(windowMs: number, max: number, message?: string) {

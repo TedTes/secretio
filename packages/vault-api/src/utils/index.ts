@@ -1,1 +1,1 @@
-export {getUserId,injectUserContext,requireJobOwnership} from "./auth";
+export {getUserId,requireJobOwnership} from "./auth";
