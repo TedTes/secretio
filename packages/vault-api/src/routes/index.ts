@@ -4,6 +4,7 @@ import jobRoutes from './jobs';
 import userRoutes from './users';
 import authRoutes from './auth';
 import githubRoutes from './github';
+import { vaultRoutes } from './vault';
 const router = Router();
 
 // Mount scan routes
@@ -12,6 +13,7 @@ router.use('/jobs', jobRoutes);
 router.use('/users', userRoutes);
 router.use('/auth', authRoutes);
 router.use('/github', githubRoutes);
+router.use('/api/vault', vaultRoutes);
 // API info endpoint
 router.get('/', (req, res) => {
   res.json({
@@ -23,6 +25,7 @@ router.get('/', (req, res) => {
        users: '/api/users',
        github:'/api/github',
        auth: '/api/auth',
+       vault: '/api/vault',
       health: '/health'
     }
   });
