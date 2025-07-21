@@ -215,3 +215,62 @@ $$ language 'plpgsql';
 CREATE TRIGGER update_user_github_connections_updated_at 
   BEFORE UPDATE ON user_github_connections 
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+
+
+
+  -- Vault Keys table for storing encrypted API keys
+CREATE TABLE IF NOT EXISTS vault_keys (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  key_name TEXT NOT NULL, -- User-friendly name like "stripe_secret" 
+  service TEXT NOT NULL,  -- Service type from scan results like "stripe_secret"
+  encrypted_value TEXT NOT NULL, -- Base64 encoded encrypted API key
+  environment TEXT NOT NULL DEFAULT 'production', -- production, staging, development
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  last_accessed TIMESTAMPTZ,
+  
+  -- Ensure unique key names per user per environment
+  UNIQUE(user_id, key_name, environment)
+);
+
+-- Add indexes for performance
+CREATE INDEX IF NOT EXISTS idx_vault_keys_user_id ON vault_keys(user_id);
+CREATE INDEX IF NOT EXISTS idx_vault_keys_service ON vault_keys(service);
+CREATE INDEX IF NOT EXISTS idx_vault_keys_environment ON vault_keys(environment);
+
+-- Enable RLS on vault_keys table
+ALTER TABLE vault_keys ENABLE ROW LEVEL SECURITY;
+
+-- RLS policies for vault_keys
+CREATE POLICY "Users can view own vault keys" 
+  ON vault_keys FOR SELECT 
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own vault keys" 
+  ON vault_keys FOR INSERT 
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own vault keys" 
+  ON vault_keys FOR UPDATE 
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own vault keys" 
+  ON vault_keys FOR DELETE 
+  USING (auth.uid() = user_id);
+
+-- Function to update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_vault_keys_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to automatically update updated_at
+CREATE TRIGGER vault_keys_updated_at
+    BEFORE UPDATE ON vault_keys
+    FOR EACH ROW
+    EXECUTE FUNCTION update_vault_keys_updated_at();
