@@ -7,8 +7,8 @@ import { ScanRepositoryRequest, ScanMultipleRequest, ApiResponse, ScanRepository
 import { AsyncScanService } from '../services/asyncScan';
 import {GitHubService} from "../services/github";
 import {ValidatedRequest,AuthenticatedRequest} from "../types";
-import { requireAuth} from '../middleware/auth';
-import {getUserId,injectUserContext} from "../utils";
+import { requireAuth,injectUserContext} from '../middleware/auth';
+import {getUserId} from "../utils";
 
 import { v4 as uuidv4 } from 'uuid';
 import { SupabaseClient } from '@supabase/supabase-js';
