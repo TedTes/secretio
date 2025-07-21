@@ -1,0 +1,41 @@
+{
+    "name": "@secretio/vault-client",
+    "version": "0.1.0",
+    "description": "Client SDK for Secretio Vault API key retrieval",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+      "build": "tsc",
+      "dev": "tsc --watch",
+      "test": "tsx src/test.ts",
+      "prepublishOnly": "npm run build"
+    },
+    "keywords": ["secretio", "vault", "api-keys", "sdk", "client"],
+    "author": "Secretio Team",
+    "license": "MIT",
+    "files": [
+      "dist/**/*",
+      "README.md"
+    ],
+    "dependencies": {
+      "node-fetch": "^2.7.0"
+    },
+    "devDependencies": {
+      "@types/node": "^20.0.0",
+      "@types/node-fetch": "^2.6.0",
+      "typescript": "^5.0.0",
+      "tsx": "^4.0.0"
+    },
+    "engines": {
+      "node": ">=18.0.0"
+    },
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/secretio/secretio.git",
+      "directory": "packages/vault-client"
+    },
+    "bugs": {
+      "url": "https://github.com/secretio/secretio/issues"
+    },
+    "homepage": "https://secretio.com"
+  }

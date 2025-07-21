@@ -1,0 +1,96 @@
+# @secretio/vault-client
+
+Client SDK for retrieving API keys from Secretio Vault.
+
+## Installation
+
+```bash
+npm install @secretio/vault-client
+```
+
+## Quick Start
+
+```typescript
+import { createVaultClient } from '@secretio/vault-client';
+
+const vault = createVaultClient({
+  baseUrl: 'https://vault.secretio.com',
+  token: process.env.VAULT_TOKEN,
+  environment: 'production' // optional, defaults to 'production'
+});
+
+// Replace hardcoded keys
+const stripeKey = await vault.getKey('stripe_secret');
+const openaiKey = await vault.getKey('openai_api_key');
+```
+
+## API Reference
+
+### `createVaultClient(options)`
+
+Creates a new vault client instance.
+
+**Options:**
+- `baseUrl` (string): Vault API base URL
+- `token` (string): Authentication token
+- `environment` (string): Environment name (default: 'production')
+
+### `vault.getKey(keyName)`
+
+Retrieves a specific API key from the vault.
+
+**Parameters:**
+- `keyName` (string): Name of the key to retrieve
+
+**Returns:** Promise<string> - The decrypted API key value
+
+### `vault.getKeys(keyNames)`
+
+Retrieves multiple keys at once.
+
+**Parameters:** 
+- `keyNames` (string[]): Array of key names
+
+**Returns:** Promise<Record<string, string>> - Object with key names and values
+
+### `vault.verify()`
+
+Verifies vault access and lists available keys.
+
+**Returns:** Promise<{ available_keys: string[], count: number }>
+
+### `vault.health()`
+
+Checks if the vault service is healthy.
+
+**Returns:** Promise<boolean>
+
+## Environment Variables
+
+Set your vault token as an environment variable:
+
+```bash
+export VAULT_TOKEN="your-vault-token-here"
+```
+
+## Error Handling
+
+```typescript
+try {
+  const apiKey = await vault.getKey('stripe_secret');
+} catch (error) {
+  if (error.message.includes('not found')) {
+    console.log('Key not found in vault');
+  } else {
+    console.error('Vault access failed:', error.message);
+  }
+}
+```
+
+## TypeScript Support
+
+Full TypeScript support with type definitions included.
+
+## License
+
+MIT
