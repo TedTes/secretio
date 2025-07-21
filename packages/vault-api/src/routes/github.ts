@@ -128,66 +128,70 @@ router.get('/connection/status',
 // Get user repositories with smart filtering
 router.get('/repositories',
   requireAuth, 
-  asyncHandler(async (req:AuthenticatedRequest & ValidatedRequest, res:Response) => {
+  asyncHandler(async (req:AuthenticatedRequest , res:Response) => {
+    const userId = req.user.id;
+
+    const supabase = (req as AuthenticatedRequest).supabaseClient;
     const github = new GitHubService(req.headers.authorization?.replace('Bearer ', ''));
-    
     const page = parseInt(req.query.page as string) || 1;
     const perPage = Math.min(parseInt(req.query.per_page as string) || 30, 100);
     const type = req.query.type as string || 'all';
     const sort = req.query.sort as string || 'updated';
     const maxRequests = parseInt(req.query.max_requests as string) || 1000;
-    
-    // Get repositories
-    const repos = await github.getUserRepositories(req.headers.authorization?.replace('Bearer ', '')??'', {
+    // Get rate limit info
+    let rateLimitInfo = null;
+    try {
+      const githubConnection = await githubService.getUserGitHubConnection(userId,supabase);
+
+      if (!githubConnection) {
+        return res.status(400).json({
+          success: false,
+          error: 'GitHub account not connected'
+        });
+      }
+         // Get repositories
+    const repositories = await github.getUserRepositories(githubConnection.access_token, {
       page,
       per_page: perPage,
       type,
       sort
     });
-    
-    // Add size warnings to each repo
-    const reposWithWarnings = repos.map(repo => ({
-      ...repo,
-      formattedSize: formatRepoSize(repo.size || 0),
-      warning: getRepoSizeWarning(repo.size || 0)
-    }));
-    
-    // Get rate limit info
-    let rateLimitInfo = null;
-    try {
-      const rateLimit = await github.getRateLimit();
-      rateLimitInfo = {
-        remaining: rateLimit.rate.remaining,
-        limit: rateLimit.rate.limit,
-        resetTime: new Date(rateLimit.rate.reset * 1000)
-      };
-    } catch (error) {
-      console.warn('Could not fetch rate limit info:', error);
-    }
-    
-    // Filter repositories based on size and rate limits if requested
-    const shouldFilter = req.query.filter_by_size === 'true';
-    const filteredRepos = shouldFilter 
+           // Add size warnings to each repo
+       const reposWithWarnings = repositories.map(repo => ({
+        ...repo,
+        formattedSize: formatRepoSize(repo.size || 0),
+        warning: getRepoSizeWarning(repo.size || 0)
+      }));
+      // const rateLimit = await github.getRateLimit();
+      // rateLimitInfo = {
+      //   remaining: rateLimit.rate.remaining,
+      //   limit: rateLimit.rate.limit,
+      //   resetTime: new Date(rateLimit.rate.reset * 1000)
+      // };
+      // Filter repositories based on size and rate limits if requested
+      const shouldFilter = req.query.filter_by_size === 'true';
+      const filteredRepos = shouldFilter 
       ? filterReposBySize(reposWithWarnings, maxRequests)
       : reposWithWarnings;
-    
-    // Categorize repos by scanning difficulty
-    const categories = {
+      // Categorize repos by scanning difficulty
+      const categories = {
       recommended: filteredRepos.filter(repo => 
         repo.warning.level === 'success' || repo.warning.level === 'info'
       ).slice(0, 5),
       moderate: filteredRepos.filter(repo => repo.warning.level === 'warning'),
       difficult: filteredRepos.filter(repo => repo.warning.level === 'error')
     };
-    
-    res.json({
+    res.status(200).json({
+      success: true,
+      data: repositories,
+      reposWithWarnings,
       repositories: filteredRepos,
       categories,
       rateLimitInfo,
       pagination: {
         page,
         perPage,
-        hasMore: repos.length === perPage
+        hasMore: repositories.length === perPage
       },
       summary: {
         total: filteredRepos.length,
@@ -195,7 +199,31 @@ router.get('/repositories',
         recommended: categories.recommended.length
       }
     });
+  } catch (error) {
+
+    console.error('GitHub repositories error:', error);
+      
+      if ((error instanceof Error?error.message.includes('token_expired'):error)) {
+        await githubService.removeUserGitHubToken(userId,supabase);
+        return res.status(401).json({
+          success: false,
+          error: 'GitHub token expired, please reconnect',
+          reconnect_required: true
+        });
+      }
+
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch repositories'
+      });
+      console.warn('Could not fetch rate limit info:', error);
+  }
   })
+  
+    
+ 
+    
+
 );
 
 // Get repository branches

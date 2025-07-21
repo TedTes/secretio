@@ -204,7 +204,7 @@ export class GitHubService {
       type: options.type ?? 'all',
       sort: options.sort ?? 'updated',
     });
-  
+
     const response = await fetch(`https://api.github.com/user/repos?${params.toString()}`, {
       headers: {
         'Authorization': `token ${access_token}`,
@@ -212,7 +212,7 @@ export class GitHubService {
         'User-Agent': 'Secretio-Vault-API/1.0.0'
       }
     });
-  
+    
     if (!response.ok) {
       throw new Error(`Failed to fetch repositories: ${response.status} ${response.statusText}`);
     }
