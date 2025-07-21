@@ -126,4 +126,95 @@ vaultRoutes.delete('/keys/:keyName',
   })
 );
 
+// GET /api/vault/retrieve/:keyName - Public API for applications to get keys
+vaultRoutes.get('/retrieve/:keyName',
+  requireAuth,
+  injectUserContext,
+  asyncHandler(async (req: AuthenticatedRequest, res:Response) => {
+    const supabase = req.supabaseClient;
+    const userId = getUserId(req);
+    const { keyName } = req.params;
+    const environment = (req.query.environment as string) || 'production';
+    
+    if (!userId) {
+      throw createError('User ID required', 401);
+    }
+
+    try {
+      const keyData = await vaultService.getKeyValue(userId, keyName, environment, supabase);
+
+      res.json({
+        success: true,
+        data: {
+          value: keyData.value,
+          service: keyData.service,
+          retrieved_at: new Date().toISOString()
+        }
+      });
+
+    } catch (error) {
+      // Return consistent error format for API consumers
+      res.status(error instanceof Error && error.message === 'Key not found' ? 404 : 500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to retrieve key',
+        key_name: keyName,
+        environment
+      });
+    }
+  })
+);
+// POST /api/vault/verify - Verify API access and return available keys
+vaultRoutes.post('/verify',
+  requireAuth,
+  injectUserContext,
+  asyncHandler(async (req: AuthenticatedRequest, res:Response) => {
+    const supabase = req.supabaseClient;
+    const userId = getUserId(req);
+    const environment = (req.body.environment as string) || 'production';
+    
+    if (!userId) {
+      throw createError('User ID required', 401);
+    }
+
+    try {
+      const keys = await vaultService.getUserKeys(userId, environment, supabase);
+      
+      res.json({
+        success: true,
+        data: {
+          user_id: userId,
+          environment,
+          available_keys: keys.map(key => ({
+            name: key.keyName,
+            service: key.service,
+            created_at: key.createdAt
+          })),
+          count: keys.length,
+          verified_at: new Date().toISOString()
+        }
+      });
+
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Verification failed'
+      });
+    }
+  })
+);
+
+// GET /api/vault/health - Simple health check for vault service
+vaultRoutes.get('/health',
+  asyncHandler(async (req:Request, res:Response) => {
+    res.json({
+      success: true,
+      data: {
+        service: 'vault-api',
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        version: '1.0.0'
+      }
+    });
+  })
+);
 export { vaultRoutes };
