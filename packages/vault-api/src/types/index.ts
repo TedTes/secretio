@@ -16,3 +16,5 @@ export {
 
   export {ApiResponse} from "./api";
 
+export {ScanStats} from "./api";
+export {ScanRequest} from "./github";

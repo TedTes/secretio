@@ -13,7 +13,7 @@ router.use('/jobs', jobRoutes);
 router.use('/users', userRoutes);
 router.use('/auth', authRoutes);
 router.use('/github', githubRoutes);
-router.use('/api/vault', vaultRoutes);
+router.use('/vault', vaultRoutes);
 // API info endpoint
 router.get('/', (req, res) => {
   res.json({
