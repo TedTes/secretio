@@ -7,15 +7,16 @@ import {ValidatedRequest,ApiResponse,AuthenticatedRequest} from "../types";
 import { requireJobOwnership } from '../utils';
 import { requireAuth  } from '../middleware/auth';
 import Joi from 'joi';
-import { SupabaseClient } from '@supabase/supabase-js';
-
+import {DatabaseService} from "../services//database";
+import {getUserId} from "../utils";
+import { ScanResult } from '@secretio/shared';
 const jobRoutes = Router();
 
 // Helper function to get user-specific AsyncScanService
-const getUserScanService = async (userId: string,supabase:SupabaseClient): Promise<AsyncScanService> => {
+const getUserScanService = async (userId: string,dbClient:DatabaseService): Promise<AsyncScanService> => {
     // Get user's GitHub connection from database
     const githubService = new GitHubService();
-    const githubConnection = await githubService.getUserGitHubConnection(userId,supabase);
+    const githubConnection = await githubService.getUserGitHubConnection(userId,dbClient);
   
     if (!githubConnection) {
       throw createError('GitHub account not connected', 400, 'GITHUB_NOT_CONNECTED');
@@ -24,7 +25,7 @@ const getUserScanService = async (userId: string,supabase:SupabaseClient): Promi
     const isValid = await userGithubService.validateToken(githubConnection.access_token);
     if (!isValid) {
         // Remove invalid token from database
-    await githubService.removeUserGitHubToken(userId,supabase);
+    await githubService.removeUserGitHubToken(userId,dbClient);
       throw createError('GitHub token expired, please reconnect', 401, 'GITHUB_TOKEN_EXPIRED');
     }
   return new AsyncScanService(githubConnection.access_token, userId);
@@ -43,12 +44,12 @@ jobRoutes.get('/status/:jobId',
   requireAuth, requireJobOwnership(),
   validateParams(jobIdSchema),
   asyncHandler(async (req: AuthenticatedRequest & ValidatedRequest, res: Response) => {
-    const supabase = (req as AuthenticatedRequest).supabaseClient;
+    const dbClient = (req as AuthenticatedRequest).dbClient;
     const { jobId } = req.validatedParams;
     const userId = req.user.id;
     
     // Create user-specific service instance
-    const asyncScanService = await getUserScanService(userId,supabase);
+    const asyncScanService = await getUserScanService(userId,dbClient);
     const job = await asyncScanService.getJobStatus(jobId);
     
     if (!job) {
@@ -80,42 +81,78 @@ jobRoutes.get('/results/:jobId',
   validateParams(jobIdSchema),
   asyncHandler(async (req: AuthenticatedRequest & ValidatedRequest, res: Response) => {
     const { jobId } = req.validatedParams;
-    const userId = req.user.id;
-    const supabase = (req as AuthenticatedRequest).supabaseClient;
+    const dbClient = (req as AuthenticatedRequest).dbClient;
+    const userId = await getUserId(req);
+  
+    if (!userId) {
+      throw createError('User ID required', 401);
+    }
+    // Verify job belongs to user
+    const userJob = await req.dbClient.getScanJob(jobId);
+    if (!userJob) {
+      throw createError('Scan job not found', 404);
+    }
+
     // Create user-specific service instance
-    const asyncScanService = await getUserScanService(userId,supabase);
+    const asyncScanService = await getUserScanService(userId,dbClient);
     const job = await asyncScanService.getJobStatus(jobId);
     
     if (!job) {
       throw createError('Job not found', 404, 'JOB_NOT_FOUND');
     }
 
-    if (job.status === 'pending' || job.status === 'running') {
-      throw createError('Job not completed yet', 202, 'JOB_NOT_COMPLETED', {
-        status: job.status,
-        progress: job.progress
-      });
-    }
+    // Get scan results
+    const results = await req.dbClient.getScanResults(jobId);
+    let stats = await req.dbClient.getScanStats(jobId);
 
-    if (job.status === 'failed') {
-      throw createError(`Job failed: ${job.error}`, 400, 'JOB_FAILED');
+    // If no stats in DB yet (during running scan), calculate from results
+    if (!stats || job.status === 'running') {
+      const calculatedStats = {
+        job_id: jobId,
+        files_scanned: job.progress_current || 0,
+        keys_found: results.length,
+        high_severity: results.filter(r => r.severity === 'high').length,
+        medium_severity: results.filter(r => r.severity === 'medium').length,
+        low_severity: results.filter(r => r.severity === 'low').length,
+        total_files: job.progress_total || 0,
+        duration_ms: job.started_at && job.status === 'running' 
+          ? Date.now() - new Date(job.started_at).getTime()
+          : stats?.duration_ms || 0,
+        created_at: new Date().toISOString()
+      };
+      
+      // Use calculated stats if DB stats don't exist or are outdated
+      stats = calculatedStats;
     }
-
-    const result = await asyncScanService.getJobWithResults(jobId);
-    
-    if (!result) {
-      throw createError('Job results not found', 404, 'RESULTS_NOT_FOUND');
-    }
-
-    const response: ApiResponse = {
+    const response: ApiResponse<{
+      results: ScanResult[];
+      stats: any;
+      job_status: string;
+    }> = {
       success: true,
       data: {
-        jobId,
-        completedAt: job.completedAt,
-        ...result
+        results: results.map(result => ({
+          id: result.id,
+          service: result.service,
+          file_path: result.file_path,
+          line_number: result.line_number,
+          severity: result.severity as 'high' | 'medium' | 'low',
+          description: result.description,
+          masked_value: result.masked_value,
+          match: result.masked_value // For compatibility
+        })),
+        stats: {
+          files_scanned: stats.files_scanned,
+          keys_found: stats.keys_found,
+          high_severity: stats.high_severity,
+          medium_severity: stats.medium_severity,
+          low_severity: stats.low_severity,
+          total_files: stats.total_files,
+          duration_ms: stats.duration_ms
+        },
+        job_status: job.status
       }
-    };
-
+     };
     res.json(response);
   })
 );
@@ -125,9 +162,9 @@ jobRoutes.get('/queue',
   requireAuth, 
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const userId = req.user.id;
-    const supabase = (req as AuthenticatedRequest).supabaseClient;
+    const dbClient = (req as AuthenticatedRequest).dbClient;
     // Create user-specific service instance
-    const asyncScanService = await getUserScanService(userId,supabase);
+    const asyncScanService = await getUserScanService(userId,dbClient);
     const queueInfo = asyncScanService.getQueueStats();
     
     const response: ApiResponse = {
