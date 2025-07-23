@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import {  getAuthenticatedUser } from '../middleware/auth';
 import { hasPermission } from '../config/auth';
 import {Permission, User,ErrorResponse,AuthenticatedRequest} from "../types/";
-import {dbService} from '../services/database'
+
 
 
 /**
@@ -113,8 +113,8 @@ export function requirePermission(permission: Permission, resourceGetter?: (req:
  */
 export function requireJobOwnership() {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const supabase = (req as AuthenticatedRequest).supabaseClient;
-    const { data: { user }, error } = await supabase.auth.getUser();
+    const dbClient = (req as AuthenticatedRequest).dbClient;
+    const user= await dbClient.getAuthenticatedUser();
     const { jobId } = req.params;
     if (!user) {
       const errorResponse: ErrorResponse = {
@@ -133,7 +133,7 @@ export function requireJobOwnership() {
     }
     
     try {
-      const job = await dbService.getScanJob(jobId,supabase);
+      const job = await dbClient.getScanJob(jobId);
       if (!job) {
         const errorResponse: ErrorResponse = {
           success: false,
