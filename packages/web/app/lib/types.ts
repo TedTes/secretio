@@ -59,15 +59,15 @@ export interface User {
   }
   
   export interface ScanResult {
-    id: string;
-    service: string;
-    file_path: string;
-    line_number: number;
-    severity: 'high' | 'medium' | 'low';
-    description: string;
-    masked_value: string;
-    created_at: string;
-    match:string;
+    id?: string;                              // Database ID (optional for new results)
+    service: string;                          // Service name (e.g., 'aws', 'stripe', 'openai')
+    file_path: string;                    
+    line_number: number;                  
+    match: string;                           // Raw matched value
+    masked_value?: string;                   // Masked version for display (added for security)
+    severity: 'high' | 'medium' | 'low';    // Risk level
+    description: string;                     // Human-readable description
+    created_at?: string;                     // Timestamp (optional, added by DB)
   }
 
   export interface GitHubRepo {

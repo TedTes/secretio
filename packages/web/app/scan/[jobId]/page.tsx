@@ -6,14 +6,15 @@ import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../lib/api';
 import { ScanJob, ScanResult } from '../../lib/types';
 
-interface ScanStats {
-  files_scanned: number;
-  keys_found: number;
-  high_severity: number;
-  medium_severity: number;
-  low_severity: number;
-  total_files: number;
-  duration_ms: number;
+
+export interface ScanStats {
+  files_scanned: number;           
+  keys_found: number;              
+  high_severity: number;           
+  medium_severity: number;        
+  low_severity: number;            
+  total_files?: number;       
+  duration_ms?: number; 
 }
 
 interface ScanResultsData {
@@ -50,32 +51,57 @@ export default function ScanResultsPage() {
       setJob(jobData);
       setLastUpdate(new Date());
 
-      // If job completed or failed, get final results and stop polling
-      if (jobData.status === 'completed') {
-        console.log('✅ Job completed, fetching results...');
+      // Always try to fetch partial results and stats during scanning
+      if (jobData.status === 'running' || jobData.status === 'completed') {
         try {
           const results = await apiClient.getScanResults(jobId);
           console.log('📊 Results data:', results);
           if (results) {
             setResultsData(results);
+                      // Update stats in real-time based on actual data
+            if (results.results && results?.results?.length > 0) {
+              const realTimeStats = {
+                ...results.stats,
+                keys_found: results.results.length,
+                high_severity: results.results.filter(r => r.severity === 'high').length,
+                medium_severity: results.results.filter(r => r.severity === 'medium').length,
+                low_severity: results.results.filter(r => r.severity === 'low').length,
+                // Keep scan progress from job data if available
+                files_scanned: jobData.progress?.current || results.stats.files_scanned || 0,
+                total_files: jobData.progress?.total || results.stats.total_files || 0,
+                duration_ms: results.stats.duration_ms || 0
+              };
+                // Update the results data with corrected stats
+                setResultsData({
+                  results: results.results,
+                  stats: realTimeStats
+                });
+            }
+
           } else {
             console.warn('⚠️ No results returned from API');
             setError('No scan results available');
           }
         } catch (resultError) {
+          // Don't show error during scanning, just log it
+        if (jobData.status === 'completed') {
           console.error('❌ Failed to fetch results:', resultError);
           setError('Failed to load scan results');
+        } else {
+          console.warn('⚠️ Partial results not yet available');
+        }
         }
         // Stop polling will be handled by useEffect cleanup
       } else if (jobData.status === 'failed') {
         console.log('❌ Job failed, stopping polling');
+        setError(jobData.error || 'Scan failed');
         // Stop polling will be handled by useEffect cleanup
       }
     } catch (err) {
       console.error('❌ Polling error:', err);
       setError(err instanceof Error ? err.message : 'Failed to poll job status');
     }
-  }, [jobId]); // Remove pollingInterval from dependencies
+  }, [jobId]); 
 
   // Initial load
   useEffect(() => {
@@ -179,6 +205,7 @@ export default function ScanResultsPage() {
     }
   };
   const loadScanData = async () => {
+    if (!jobId) return;
     try {
       setLoading(true);
       setError(null);
@@ -190,26 +217,36 @@ export default function ScanResultsPage() {
       console.log('📊 Job data:', jobData);
       setJob(jobData);
 
-      // If job is completed, get results immediately
-      if (jobData.status === 'completed') {
-        console.log('✅ Job already completed, fetching results...');
-        try {
-          const results = await apiClient.getScanResults(jobId);
-          console.log('📊 Initial results data:', results);
-          if (results) {
-            setResultsData(results);
-          } else {
-            console.warn('⚠️ No initial results returned from API');
-            setError('No scan results available');
-          }
-        } catch (resultError) {
-          console.error('❌ Failed to fetch initial results:', resultError);
+      try {
+        const results = await apiClient.getScanResults(jobId);
+        if (results) {
+          // Calculate real-time stats from actual data
+          const calculatedStats = {
+            keys_found: results.results?.length || 0,
+            high_severity: results.results?.filter(r => r.severity === 'high').length || 0,
+            medium_severity: results.results?.filter(r => r.severity === 'medium').length || 0,
+            low_severity: results.results?.filter(r => r.severity === 'low').length || 0,
+            files_scanned: jobData.progress?.current || results.stats?.files_scanned || 0,
+            total_files: jobData.progress?.total || results.stats?.total_files || 0,
+            duration_ms: results.stats?.duration_ms || 0
+          };
+  
+          setResultsData({
+            results: results.results || [],
+            stats: calculatedStats
+          });
+        }
+      } catch (resultError) {
+        // Only show error if job is completed but no results
+        if (jobData.status === 'completed') {
+          console.error('❌ Failed to load results:', resultError);
           setError('Failed to load scan results');
         }
       }
+    
 
     } catch (err) {
-      console.error('❌ Load error:', err);
+      console.error('❌ Failed to load scan data:', err);
       setError(err instanceof Error ? err.message : 'Failed to load scan data');
     } finally {
       setLoading(false);
@@ -476,177 +513,72 @@ export default function ScanResultsPage() {
           </div>
         )}
 
-        {/* Results Content */}
-        {job.status === 'completed' && resultsData && (
-          <>
-            {/* Stats Summary */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      {/* Stats Summary with progress indicators */}
+<div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
   <div className="bg-slate-800 rounded-lg border border-gray-700 p-6">
     <div className="text-center">
-      <div className="text-3xl font-bold text-white mb-2">{resultsData?.stats?.keys_found || 0}</div>
+      <div className="text-3xl font-bold text-white mb-2">
+        {resultsData?.stats?.keys_found || 0}
+        {job?.status === 'running' && (
+          <span className="text-sm text-yellow-400 ml-1 animate-pulse">+</span>
+        )}
+      </div>
       <div className="text-sm text-gray-300">Keys Found</div>
     </div>
   </div>
   
   <div className="bg-slate-800 rounded-lg border border-gray-700 p-6">
     <div className="text-center">
-      <div className="text-3xl font-bold text-red-500 mb-2">{resultsData?.stats?.high_severity || 0}</div>
+      <div className="text-3xl font-bold text-red-500 mb-2">
+        {resultsData?.stats?.high_severity || 0}
+        {job?.status === 'running' && (resultsData?.stats?.high_severity ?? 0)> 0 && (
+          <span className="text-sm text-red-400 ml-1 animate-pulse">⚠</span>
+        )}
+      </div>
       <div className="text-sm text-gray-300">High Risk</div>
     </div>
   </div>
   
   <div className="bg-slate-800 rounded-lg border border-gray-700 p-6">
     <div className="text-center">
-      <div className="text-3xl font-bold text-white mb-2">{resultsData?.stats?.files_scanned || 0}</div>
-      <div className="text-sm text-gray-300">Files Scanned</div>
+      <div className="text-3xl font-bold text-white mb-2">
+        {job?.status === 'running' 
+          ? `${job.progress?.current || 0}/${job.progress?.total || 0}`
+          : resultsData?.stats?.files_scanned || 0
+        }
+      </div>
+      <div className="text-sm text-gray-300">
+        {job?.status === 'running' ? 'Files Scanning' : 'Files Scanned'}
+      </div>
+      {job?.status === 'running' && job.progress && (
+        <div className="w-full bg-gray-700 rounded-full h-1 mt-2">
+          <div 
+            className="bg-blue-500 h-1 rounded-full transition-all duration-300" 
+            style={{ width: `${getProgressPercentage()}%` }}
+          ></div>
+        </div>
+      )}
     </div>
   </div>
   
   <div className="bg-slate-800 rounded-lg border border-gray-700 p-6">
     <div className="text-center">
-      <div className="text-3xl font-bold text-white mb-2">{resultsData?.stats?.duration_ms ? Math.round(resultsData.stats.duration_ms / 1000) : 0}s</div>
-      <div className="text-sm text-gray-300">Scan Time</div>
-    </div>
-  </div>
-</div>
-
-            {/* Vault Conversion CTA */}
-            {resultsData?.stats?.keys_found > 0 && (
-  <div className="bg-gradient-to-r from-red-600/20 to-orange-600/20 border border-red-500/30 rounded-lg p-6 mb-8">
-    <div className="flex items-start justify-between">
-      <div className="flex items-start space-x-4">
-        <div className="w-12 h-12 bg-red-600 rounded-lg flex items-center justify-center flex-shrink-0">
-          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.732 15.5c-.77.833.192 2.5 1.732 2.5z" />
-          </svg>
-        </div>
-        <div>
-          <h3 className="text-xl font-bold text-white mb-2">
-            🚨 {resultsData?.stats?.keys_found || 0} Exposed API Keys Found!
-          </h3>
-          <p className="text-gray-300 mb-4">
-            Your credentials are publicly accessible and could be exploited by attackers. 
-            Secure them in an encrypted vault to prevent unauthorized access.
-          </p>
-          <div className="flex space-x-3">
-            <button
-              onClick={() => setShowVaultModal(true)}
-              className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg text-white font-semibold transition-colors"
-            >
-              🔐 Secure in Vault - $15/month
-            </button>
-            <button className="bg-slate-700 hover:bg-slate-600 px-6 py-3 rounded-lg text-white transition-colors">
-              Learn More
-            </button>
-          </div>
-        </div>
+      <div className="text-3xl font-bold text-white mb-2">
+        {job?.status === 'running' 
+          ? '...' 
+          : resultsData?.stats?.duration_ms 
+            ? Math.round(resultsData.stats.duration_ms / 1000) 
+            : 0
+        }
+        {job?.status !== 'running' && 's'}
+      </div>
+      <div className="text-sm text-gray-300">
+        {job?.status === 'running' ? 'Scanning...' : 'Scan Time'}
       </div>
     </div>
   </div>
-)}
-
-            {/* Results Table */}
-            <div className="bg-slate-800 rounded-lg border border-gray-700">
-              <div className="px-6 py-4 border-b border-gray-700">
-                <h2 className="text-xl font-bold text-white">Security Findings</h2>
-              </div>
-              
-             {/* results table condition and content */}
-            <div className="overflow-x-auto">
-            {!resultsData?.results || resultsData.results.length === 0 ? (
-            <div className="text-center py-12">
-            <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            </div>
-            <h3 className="text-lg font-bold text-white mb-2">
-            {!resultsData ? 'Loading Results...' : 'No Issues Found!'}
-            </h3>
-            <p className="text-gray-300">
-            {!resultsData 
-            ? 'Please wait while we process your scan results...'
-            : 'Your repository appears to be free of exposed API keys.'
-            }
-            </p>
-            </div>
-            ) : (
-            <table className="min-w-full divide-y divide-gray-700">
-            <thead className="bg-slate-700">
-            <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-            Severity
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-            Service
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-            File Location
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-            Value
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-            Actions
-            </th>
-            </tr>
-            </thead>
-            <tbody className="bg-slate-800 divide-y divide-gray-700">
-            {resultsData.results.map((result, index) => (
-            <tr key={index} className="hover:bg-slate-700 transition-colors">
-            <td className="px-6 py-4 whitespace-nowrap">
-            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full border ${getSeverityColor(result.severity)}`}>
-              {result.severity.toUpperCase()}
-            </span>
-            </td>
-            <td className="px-6 py-4 whitespace-nowrap">
-            <div className="text-sm font-medium text-white">{result.service}</div>
-            <div className="text-sm text-gray-300">{result.description}</div>
-            </td>
-            <td className="px-6 py-4">
-            <div className="text-sm text-white">{result.file_path}</div>
-            <div className="text-sm text-gray-300">Line {result.line_number}</div>
-            </td>
-            <td className="px-6 py-4">
-            <code className="text-sm bg-slate-700 px-2 py-1 rounded text-gray-300">
-              {result.masked_value}
-            </code>
-            </td>
-            <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
-              <button 
-                onClick={() => handleStoreInVault(result, index)}
-                disabled={storingKeys.has(index)}
-                className={`px-3 py-1 rounded text-white text-xs transition-colors ${
-                  storingKeys.has(index)
-                    ? 'bg-gray-600 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700'
-                }`}
-              >
-                {storingKeys.has(index) ? (
-                  <>
-                    <div className="animate-spin rounded-full h-3 w-3 border-b border-white inline-block mr-1"></div>
-                    Storing...
-                  </>
-                ) : (
-                  '🔐 Store'
-                )}
-              </button>
-              <button 
-                onClick={() => handleIgnoreResult(result, index)}
-                className="bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-white text-xs transition-colors"
-              >
-                Ignore
-              </button>
-              </td>
-            </tr>
-            ))}
-            </tbody>
-            </table>
-            )}
-            </div>
-            </div>
-          </>
-        )}
+</div>
+        
       </div>
 
       {/* Vault Upgrade Modal */}
@@ -757,7 +689,7 @@ export default function ScanResultsPage() {
 )}
 
 {/* Add completion celebration when all keys are stored */}
-{resultsData && resultsData.stats.keys_found === 0 && storedKeys.size > 0 && (
+{resultsData && resultsData?.stats?.keys_found === 0 && storedKeys.size > 0 && (
   <div className="bg-gradient-to-r from-green-600/20 to-blue-600/20 border border-green-500/30 rounded-lg p-6 mb-8">
     <div className="text-center">
       <div className="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
