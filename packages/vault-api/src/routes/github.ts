@@ -77,12 +77,12 @@ router.post('/token/exchange',
 router.get('/connection/status',
   requireAuth,
   asyncHandler(async (req:AuthenticatedRequest & ValidatedRequest,res:Response) => {
-    const supabase = (req as AuthenticatedRequest).supabaseClient;
+    const dbClient = (req as AuthenticatedRequest).dbClient;
     const userId = req.user.id;
 
     try {
       
-      const githubConnection = await githubService.getUserGitHubConnection(userId,supabase);
+      const githubConnection = await githubService.getUserGitHubConnection(userId,dbClient );
 
       if (!githubConnection) {
         return res.status(200).json({
@@ -96,7 +96,7 @@ router.get('/connection/status',
 
       if (!isValid) {
         // Token expired, remove from database
-        await githubService.removeUserGitHubToken(userId,supabase);
+        await githubService.removeUserGitHubToken(userId,dbClient);
         return res.status(200).json({
           success: true,
           connected: false,
@@ -131,7 +131,7 @@ router.get('/repositories',
   asyncHandler(async (req:AuthenticatedRequest , res:Response) => {
     const userId = req.user.id;
 
-    const supabase = (req as AuthenticatedRequest).supabaseClient;
+    const dbClient  = (req as AuthenticatedRequest).dbClient ;
     const github = new GitHubService(req.headers.authorization?.replace('Bearer ', ''));
     const page = parseInt(req.query.page as string) || 1;
     const perPage = Math.min(parseInt(req.query.per_page as string) || 30, 100);
@@ -141,7 +141,7 @@ router.get('/repositories',
     // Get rate limit info
     let rateLimitInfo = null;
     try {
-      const githubConnection = await githubService.getUserGitHubConnection(userId,supabase);
+      const githubConnection = await githubService.getUserGitHubConnection(userId,dbClient);
 
       if (!githubConnection) {
         return res.status(400).json({
@@ -204,7 +204,7 @@ router.get('/repositories',
     console.error('GitHub repositories error:', error);
       
       if ((error instanceof Error?error.message.includes('token_expired'):error)) {
-        await githubService.removeUserGitHubToken(userId,supabase);
+        await githubService.removeUserGitHubToken(userId,dbClient);
         return res.status(401).json({
           success: false,
           error: 'GitHub token expired, please reconnect',
@@ -232,9 +232,9 @@ router.get('/repositories/:owner/:repo/branches',
   asyncHandler(async (req:AuthenticatedRequest & ValidatedRequest, res:Response) => {
     const userId = req.user.id;
     const { owner, repo } = req.params;
-    const supabase = (req as AuthenticatedRequest).supabaseClient;
+    const dbClient  = (req as AuthenticatedRequest).dbClient ;
     try {
-      const githubConnection = await githubService.getUserGitHubConnection(userId,supabase);
+      const githubConnection = await githubService.getUserGitHubConnection(userId,dbClient );
 
       if (!githubConnection) {
         return res.status(400).json({
@@ -309,9 +309,9 @@ router.delete('/disconnect',
   requireAuth,
   asyncHandler(async (req:AuthenticatedRequest, res:Response) => {
     const userId = req.user.id;
-    const supabase = (req as AuthenticatedRequest).supabaseClient;
+    const dbClient  = (req as AuthenticatedRequest).dbClient ;
     try {
-      await githubService.removeUserGitHubToken(userId,supabase);
+      await githubService.removeUserGitHubToken(userId,dbClient);
 
       res.status(200).json({
         success: true,

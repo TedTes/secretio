@@ -4,7 +4,7 @@ import { asyncHandler, createError } from '../middleware/errorHandler';
 import { requireAuth,  getAuthenticatedUser } from '../middleware/auth';
 import { authRateLimit, logUserAction } from '../utils/auth';
 import { AuthService } from '../services/auth';
-import { dbService } from '../services/database';
+
 import { 
   loginSchema, 
   registerSchema, 
@@ -22,6 +22,7 @@ import {
   ValidatedRequest,
   ApiResponse
 } from '../types';
+import { DatabaseService } from '../services/database';
 
 
 const authRoutes = Router();
@@ -54,7 +55,7 @@ authRoutes.post('/register',
       }
 
       // Create user record in our database
-      const user = await dbService.createUser(email, github_username);
+      const user = await DatabaseService.createUser(email, github_username);
 
       console.log(`✅ User registered successfully: ${user.id} (${email})`);
 
@@ -103,11 +104,11 @@ authRoutes.post('/login',
       }
 
       // Get user record from our database
-      let user = await dbService.getUser(authResult.user.id);
+      let user = await DatabaseService.getUser(authResult.user.id);
       
       // Create user record if it doesn't exist (OAuth users)
       if (!user) {
-        user = await dbService.createUser(authResult.user.email);
+        user = await DatabaseService.createUser(authResult.user.email);
       }
 
       console.log(`✅ User logged in successfully: ${user.id} (${email})`);
@@ -222,7 +223,7 @@ authRoutes.get('/me',
 
     try {
       // Get additional user data from database
-      const dbUser = await dbService.getUser(user.id);
+      const dbUser = await DatabaseService.getUser(user.id);
       
       const response: ApiResponse = {
         success: true,
@@ -402,14 +403,14 @@ authRoutes.post('/oauth/callback',
       }
 
       // Get or create user record
-      let user = await dbService.getUser(authResult.user.id);
+      let user = await DatabaseService.getUser(authResult.user.id);
       
       if (!user) {
         const githubUsername = provider === 'github' 
           ? authResult.user.user_metadata?.user_name || authResult.user.user_metadata?.preferred_username
           : undefined;
           
-        user = await dbService.createUser(authResult.user.email, githubUsername);
+        user = await DatabaseService.createUser(authResult.user.email, githubUsername);
       }
 
       console.log(`✅ OAuth login successful: ${user.id} via ${provider}`);

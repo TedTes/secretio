@@ -2,30 +2,22 @@ import { ScanService } from './scan';
 import { jobQueue } from './jobQueue';
 import { ScanRepositoryRequest } from '../types/api';
 import { ScanJob } from '../types/jobs';
-import { dbService } from './database';
-import { createClient ,SupabaseClient} from '@supabase/supabase-js';
+import { DatabaseService } from './database';
 
 
 export class AsyncScanService {
   private scanService: ScanService;
   private userId: string;
-  private supabase: SupabaseClient;
-  private static  supabaseUrl = process.env.SUPABASE_URL;
-  private static  supabaseKey = process.env.SUPABASE_ANON_KEY;
-  constructor(githubToken: string, userId: string) {
-    if (!githubToken) {
-      throw new Error('GitHub token is required for AsyncScanService');
-    }
+  private dbClient:DatabaseService;
+  constructor(dbClient:DatabaseService, userId: string) {
+
     
     if (!userId) {
       throw new Error('User ID is required for AsyncScanService');
     }
-    if (!AsyncScanService.supabaseUrl || !AsyncScanService.supabaseKey) {
-      throw new Error('Missing Supabase environment variables');
-    }
-     this.supabase = createClient(AsyncScanService.supabaseUrl,AsyncScanService.supabaseKey);
+    this.dbClient = dbClient;
     this.userId = userId;
-    this.scanService = new ScanService(githubToken);
+    this.scanService = new ScanService(this.dbClient);
     
     // Listen for job events
     jobQueue.on('jobStarted', this.processJob.bind(this));
@@ -33,33 +25,30 @@ export class AsyncScanService {
 
   async queueScan(request: ScanRepositoryRequest): Promise<ScanJob> {
     // Create job in queue
-    const job = await jobQueue.createJob(request, this.userId);
+    const job = await jobQueue.createJob(request, this.userId,this.dbClient);
     
     console.log(`⏳ Queued scan job ${job.id} for ${request.owner}/${request.repo}`);
     
     return job;
   }
   async getUserJobs(userId: string, limit = 50): Promise<ScanJob[]> {
-    return jobQueue.getUserJobs(userId, limit);
+    return jobQueue.getUserJobs(userId, limit,this.dbClient);
   }
   private async processJob(job: ScanJob): Promise<void> {
     try {
       console.log(`🚀 Processing job ${job.id}: ${job.request.owner}/${job.request.repo}`);
-      
-      // Create scan service with job-specific token
-      const scanService = new ScanService(job.request.github_token);
-      
+    
       // Override the GitHub service to report progress
-      const originalGetRepositoryTree = scanService['githubService'].getRepositoryTree.bind(scanService['githubService']);
-      const originalGetFileContent = scanService['githubService'].getFileContent.bind(scanService['githubService']);
+      const originalGetRepositoryTree = this.scanService['githubService'].getRepositoryTree.bind(this.scanService['githubService']);
+      const originalGetFileContent = this.scanService['githubService'].getFileContent.bind(this.scanService['githubService']);
       
       // Track progress during file discovery
-      scanService['githubService'].getRepositoryTree = async (...args) => {
+      this.scanService['githubService'].getRepositoryTree = async (...args) => {
         jobQueue.updateJobProgress(job.id, {
           current: 0,
           total: 0,
           currentFile: 'Discovering files...'
-        });
+        },this.dbClient);
         
         const result = await originalGetRepositoryTree(...args);
         
@@ -67,28 +56,28 @@ export class AsyncScanService {
           current: 0,
           total: result.length,
           currentFile: 'Starting scan...'
-        });
+        },this.dbClient);
         
         return result;
       };
 
       // Perform the actual scan
-      const result = await scanService.scanRepository(job.request);
+      const result = await this.scanService.scanRepository(job.request);
       
       // Store result and mark as completed
-      jobQueue.setJobResult(job.id, result);
-      jobQueue.updateJobStatus(job.id, 'completed');
+      jobQueue.setJobResult(job.id, result,this.dbClient);
+      jobQueue.updateJobStatus(job.id, this.dbClient,'completed');
       
-      console.log(`✅ Job ${job.id} completed: ${result.stats.keysFound} keys found`);
+      console.log(`✅ Job ${job.id} completed: ${result.stats.keys_found} keys found`);
       
     } catch (error) {
       console.error(`❌ Job ${job.id} failed:`, error instanceof Error? error.message:`processing job failed, ${error}`);
-      jobQueue.updateJobStatus(job.id, 'failed', error instanceof Error? error.message:`processing job failed, ${error}`);
+      jobQueue.updateJobStatus(job.id, this.dbClient,'failed', error instanceof Error? error.message:`processing job failed, ${error}`);
     }
   }
 
   getJobStatus(jobId: string): Promise<ScanJob | undefined> {
-    return jobQueue.getJob(jobId,this.supabase);
+    return jobQueue.getJob(jobId,this.dbClient);
   }
 
   async getJobWithResults(jobId: string): Promise<{
@@ -96,7 +85,7 @@ export class AsyncScanService {
     results?: any[];
     stats?: any;
   }> {
-    const job = await jobQueue.getJob(jobId,this.supabase);
+    const job = await jobQueue.getJob(jobId,this.dbClient);
     
     if (!job || job.status !== 'completed') {
       return { job };
@@ -104,8 +93,8 @@ export class AsyncScanService {
 
     try {
       const [results, stats] = await Promise.all([
-        dbService.getScanResults(jobId),
-        dbService.getScanStats(jobId)
+        this.dbClient.getScanResults(jobId),
+        this.dbClient.getScanStats(jobId)
       ]);
 
       return { job, results, stats };
@@ -118,12 +107,12 @@ export class AsyncScanService {
   getQueueStats() {
     return {
       stats: jobQueue.getJobStats(),
-      pendingJobs: jobQueue.getPendingJobs().map(job => ({
+      pendingJobs: jobQueue.getPendingJobs().map((job:ScanJob)  => ({
         id: job.id,
         repository: `${job.request.owner}/${job.request.repo}`,
         createdAt: job.createdAt
       })),
-      runningJobs: jobQueue.getRunningJobs().map(job => ({
+      runningJobs: jobQueue.getRunningJobs().map((job:ScanJob) => ({
         id: job.id,
         repository: `${job.request.owner}/${job.request.repo}`,
         startedAt: job.startedAt,

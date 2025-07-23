@@ -11,14 +11,14 @@ import { requireAuth,injectUserContext} from '../middleware/auth';
 import {getUserId} from "../utils";
 
 import { v4 as uuidv4 } from 'uuid';
-import { SupabaseClient } from '@supabase/supabase-js';
+import { DatabaseService } from '../services/database';
 const scanRoutes = Router();
 
 // Helper function to get user-specific AsyncScanService
-const getUserScanService = async (userId: string,owner:string, repo: string, supabase:SupabaseClient): Promise<AsyncScanService> => {
+const getUserScanService = async (userId: string,owner:string, repo: string, dbClient:DatabaseService): Promise<AsyncScanService> => {
   // Get user's GitHub connection from database
   const githubService = new GitHubService();
-  const githubConnection = await githubService.getUserGitHubConnection(userId,supabase);
+  const githubConnection = await githubService.getUserGitHubConnection(userId,dbClient);
 
   if (!githubConnection) {
     throw createError('GitHub account not connected', 400, 'GITHUB_NOT_CONNECTED');
@@ -27,12 +27,11 @@ const getUserScanService = async (userId: string,owner:string, repo: string, sup
   const isValid = await userGithubService.validateToken(githubConnection.access_token);
   if (!isValid) {
       // Remove invalid token from database
-  await githubService.removeUserGitHubToken(userId,supabase);
+  await githubService.removeUserGitHubToken(userId,dbClient);
     throw createError('GitHub token expired, please reconnect', 401, 'GITHUB_TOKEN_EXPIRED');
   }
   const repoInfo = await userGithubService.getRepository(owner, repo);
-  console.log("test output");
-  console.log(repoInfo);
+
   if ((repoInfo.size || 0) > 50000) { // 50MB limit
     throw createError('Repository too large (${Math.round((repoInfo.size || 0) / 1024)}MB). Please try a smaller repository (under 50MB).',
       400,
@@ -40,14 +39,14 @@ const getUserScanService = async (userId: string,owner:string, repo: string, sup
     )
   }
 
-  return new AsyncScanService(githubConnection.access_token, userId);
+  return new AsyncScanService(dbClient,userId);
 };
 // POST /api/scan/repository
 scanRoutes.post('/repository',
   requireAuth,
   injectUserContext,
     validateBody(scanRepositorySchema), 
-    asyncHandler(async (req: ValidatedRequest<ScanRepositoryRequest>, res: Response) => {
+    asyncHandler(async (req: AuthenticatedRequest & ValidatedRequest<ScanRepositoryRequest>, res: Response) => {
 
 
     const startTime = Date.now();
@@ -56,8 +55,8 @@ scanRoutes.post('/repository',
 
     console.log(`📡 [${scanId}] Starting scan for ${owner}/${repo}${branch ? `@${branch}` : ''}`);
 
-
-    const scanService = new ScanService(github_token);
+  
+    const scanService = new ScanService(req.dbClient);
 
     console.log(`📡 Starting scan for ${owner}/${repo}`);
 
@@ -69,7 +68,7 @@ scanRoutes.post('/repository',
     });
 
     const duration = Date.now() - startTime;
-    console.log(`✅ [${scanId}] Scan completed in ${duration}ms: ${result.stats.keysFound} keys found`);
+    console.log(`✅ [${scanId}] Scan completed in ${duration}ms: ${result.stats.keys_found} keys found`);
    
 
     const response: ApiResponse<ScanRepositoryResponse> = {
@@ -90,7 +89,7 @@ scanRoutes.post('/repository',
 scanRoutes.post('/multiple',
   requireAuth, injectUserContext,
     validateBody(scanMultipleSchema),
-    asyncHandler(async (req: ValidatedRequest<ScanMultipleRequest>, res: Response) => {
+    asyncHandler(async (req: AuthenticatedRequest & ValidatedRequest<ScanMultipleRequest>, res: Response) => {
       const startTime = Date.now();
       const scanId = uuidv4();
       
@@ -103,11 +102,11 @@ scanRoutes.post('/multiple',
   
       console.log(`📡 [${scanId}] Starting bulk scan for ${repositories.length} repositories`);
   
-      const scanService = new ScanService(github_token);
+      const scanService = new ScanService(req.dbClient);
       const results = await scanService.scanMultipleRepositories(repositories);
   
       const duration = Date.now() - startTime;
-      const totalKeys = results.reduce((sum, result) => sum + result.stats.keysFound, 0);
+      const totalKeys = results.reduce((sum, result) => sum + result.stats.keys_found, 0);
       
       console.log(`✅ [${scanId}] Bulk scan completed in ${duration}ms: ${totalKeys} total keys found`);
   
@@ -136,7 +135,7 @@ scanRoutes.post('/async',
     requireAuth, injectUserContext,
     validateBody(scanRepositorySchema),
     asyncHandler(async (req: AuthenticatedRequest & ValidatedRequest<ScanRepositoryRequest>, res: Response) => {
-    const supabase = (req as AuthenticatedRequest).supabaseClient;
+    const dbClient = (req as AuthenticatedRequest).dbClient;
 
       const { owner, repo, branch} = req.validatedBody;
       const userId = getUserId(req);
@@ -157,7 +156,7 @@ scanRoutes.post('/async',
     });
   }
       
-    const asyncScanService = await getUserScanService(userId,owner, repo, supabase);
+    const asyncScanService = await getUserScanService(userId,owner, repo, dbClient);
 
 
       const job = await asyncScanService.queueScan({
@@ -185,8 +184,8 @@ scanRoutes.post('/async',
   )
 // GET /api/scan/test
 scanRoutes.get('/test', 
-    asyncHandler(async (req:ValidatedRequest<ScanMultipleRequest>, res: Response) => {
-      const scanService = new ScanService();
+    asyncHandler(async (req:AuthenticatedRequest & ValidatedRequest<ScanMultipleRequest>, res: Response) => {
+      const scanService = new ScanService(req.dbClient);
       
       const result = await scanService.scanRepository({
         owner: 'octocat',
