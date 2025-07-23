@@ -187,9 +187,12 @@ export default function Dashboard() {
         <span className="text-sm text-gray-400">Starting at</span>
         <div className="text-2xl font-bold text-white">$15<span className="text-sm text-gray-400">/user/month</span></div>
       </div>
-      <button className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white font-semibold transition-colors">
-        Upgrade Now
-      </button>
+      <button 
+  onClick={() => router.push('/vault/upgrade')}
+  className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white font-semibold transition-colors"
+>
+  Upgrade Now
+</button>
     </div>
   </div>
 </div>
