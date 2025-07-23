@@ -2,9 +2,12 @@ import Stripe from 'stripe';
 import { createError } from '../middleware/errorHandler';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-10-16',
+  apiVersion: '2025-06-30.basil',
 });
 
+interface IStripeInvoice extends Stripe.Invoice {
+ subscription:string;
+}
 export class StripeService {
   
   /**
@@ -105,11 +108,11 @@ export class StripeService {
           break;
         
         case 'invoice.payment_succeeded':
-          await this.handlePaymentSucceeded(event.data.object as Stripe.Invoice);
+          await this.handlePaymentSucceeded(event.data.object as IStripeInvoice);
           break;
         
         case 'invoice.payment_failed':
-          await this.handlePaymentFailed(event.data.object as Stripe.Invoice);
+          await this.handlePaymentFailed(event.data.object as IStripeInvoice);
           break;
 
         default:
@@ -165,12 +168,12 @@ export class StripeService {
     // Update user status
   }
 
-  private async handlePaymentSucceeded(invoice: Stripe.Invoice) {
-    console.log(`Payment succeeded for subscription: ${invoice.subscription}`);
+  private async handlePaymentSucceeded(invoice: IStripeInvoice) {
+    console.log(`Payment succeeded for subscription: ${invoice?.subscription}`);
     // Log successful payment
   }
 
-  private async handlePaymentFailed(invoice: Stripe.Invoice) {
+  private async handlePaymentFailed(invoice: IStripeInvoice) {
     console.log(`Payment failed for subscription: ${invoice.subscription}`);
     // Handle failed payment (email user, grace period, etc.)
   }
