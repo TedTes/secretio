@@ -61,7 +61,7 @@ export interface DbScanResult {
 }
 
 export interface DbScanStats {
-  id: string;
+  id?: string;
   job_id: string;
   files_scanned: number;
   keys_found: number;

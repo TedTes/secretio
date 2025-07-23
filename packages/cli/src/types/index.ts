@@ -1,11 +1,14 @@
 export interface ScanResult {
-    service: string;
-    file: string;
-    line: number;
-    match: string;
-    severity: 'high' | 'medium' | 'low';
-    description: string;
-  }
+  id?: string;                             // Optional for CLI usage
+  service: string;                         
+  file_path: string;                       // Updated field name
+  line_number: number;                     // Updated field name
+  match: string;                          
+  masked_value?: string;                   // Added for consistency
+  severity: 'high' | 'medium' | 'low';    
+  description: string;                     
+  created_at?: string;                     // Added for consistency
+}
   
   export interface ScanOptions {
     path: string;

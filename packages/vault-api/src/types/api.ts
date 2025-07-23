@@ -25,18 +25,21 @@ export interface ApiResponse<T = any> {
   message?: string;
 }
 
+
 export interface ScanStats {
-  filesScanned: number;
-  keysFound: number;
-  highSeverity: number;
-  mediumSeverity: number;
-  lowSeverity: number;
+  files_scanned: number;           
+  keys_found: number;              
+  high_severity: number;           
+  medium_severity: number;        
+  low_severity: number;            
+  total_files?: number;       
+  duration_ms?: number; 
 }
 
 export interface ScanRepositoryResponse {
   success: boolean;
   results: ScanResult[];
-  stats: ScanStats;
+  stats?: ScanStats;
   repository: {
     owner: string;
     repo: string;

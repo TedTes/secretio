@@ -1,5 +1,6 @@
 import { supabase } from '../config/database';
 import { Request } from 'express';
+import { DatabaseService } from '../services/database';
 export interface User {
     id: string;
     email?: string;
@@ -131,4 +132,5 @@ export interface AuthenticatedRequest extends Request {
     exp?: string;
   };
   supabaseClient: typeof supabase;
+  dbClient: DatabaseService;
 }

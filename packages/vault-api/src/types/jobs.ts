@@ -27,11 +27,11 @@ export interface ScanJob extends BaseJob {
     success: boolean;
     results: ScanResult[];
     stats: {
-      filesScanned: number;
-      keysFound: number;
-      highSeverity: number;
-      mediumSeverity: number;
-      lowSeverity: number;
+      files_scanned: number;
+      keys_found: number;
+      high_severity: number;
+      medium_severity: number;
+      low_severity: number;
     };
     repository: {
       owner: string;
@@ -39,7 +39,11 @@ export interface ScanJob extends BaseJob {
       branch: string;
       totalFiles: number;
     };
+ 
   };
+  progress_current?:number;
+  progress_total?:number;
+  started_at?:Date;
 }
 
 export interface JobQueueStats {

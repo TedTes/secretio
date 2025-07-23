@@ -44,10 +44,13 @@ export interface GitHubFile {
   }
   
   export interface ScanResult {
+    id?: string;                             // Optional until stored in DB
     service: string;
-    file: string;
-    line: number;
+    file_path: string;                       // Updated field name  
+    line_number: number;                     // Updated field name
     match: string;
+    masked_value?: string;                   // Will be added when storing
     severity: 'high' | 'medium' | 'low';
     description: string;
+    created_at?: string;                     // Will be added when storing
   }

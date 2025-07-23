@@ -19,8 +19,8 @@ export class Scanner {
             if (this.isValidApiKey(match, serviceName)) {
               results.push({
                 service: serviceName,
-                file: filePath,
-                line: lineNumber + 1,
+                file_path: filePath,
+                line_number: lineNumber + 1,
                 match: match,
                 severity: pattern.severity,
                 description: pattern.description
