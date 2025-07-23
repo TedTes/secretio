@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { useApi, useUserJobs, useUserStats } from '../hooks/useApi';
-import { apiClient } from '../lib/api';
-import { ScanJob } from '../lib/types';
+import {  useUserJobs, useUserStats } from '../hooks/useApi';
+import UserMenu from '../components/auth/UserMenu';
+
 
 type UserStats = {
     totalScans: number;
@@ -15,7 +15,8 @@ type UserStats = {
 export default function Dashboard() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
-//   API hooks for user data
+  
+  // API hooks for user data
   const { data: jobs, loading: jobsLoading, execute: refetchJobs } = useUserJobs();
   const { data: stats, loading: statsLoading } = useUserStats() as { data?: UserStats, loading: boolean };
 
@@ -25,7 +26,7 @@ export default function Dashboard() {
     }
   }, [isAuthenticated]);
 
-//   Loading state
+  // Loading state
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
@@ -34,30 +35,31 @@ export default function Dashboard() {
     );
   }
 
-//   Redirect if not authenticated
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-4">Access Denied</h1>
-          <p className="text-gray-300 mb-6">Please log in to access your dashboard.</p>
-          <button 
-            onClick={() => window.location.href = '/'}
-            className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg text-white transition-colors"
-          >
-            Go Home
-          </button>
-        </div>
+ // Redirect if not authenticated
+ if (!isAuthenticated) {
+  return (
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold text-white mb-4">Access Denied</h1>
+        <p className="text-gray-300 mb-6">Please log in to access your dashboard.</p>
+        <button 
+          onClick={() => window.location.href = '/'}
+          className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg text-white transition-colors"
+        >
+          Go Home
+        </button>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   return (
     <div className="min-h-screen bg-slate-900">
       {/* Navigation */}
-      <nav className="bg-slate-900 border-b border-gray-800">
+          <nav className="bg-slate-900 border-b border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
+            {/* Logo section */}
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-blue-500 rounded-lg flex items-center justify-center">
                 <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -67,14 +69,24 @@ export default function Dashboard() {
               <span className="text-xl font-bold text-white">secretio</span>
             </div>
             
-            <div className="flex items-center space-x-4">
-              <span className="text-gray-300">Welcome, {user?.email}</span>
+            {/* Navigation links and user menu */}
+            <div className="flex items-center space-x-6">
+              {/* Quick action buttons */}
               <button
-                onClick={() => window.location.href = '/settings'}
-                className="text-gray-300 hover:text-white transition-colors"
+                onClick={() => router.push('/scan/new')}
+                className="text-gray-300 hover:text-white transition-colors hidden sm:block"
               >
-                Settings
+                New Scan
               </button>
+              <button
+                onClick={() => router.push('/vault')}
+                className="text-gray-300 hover:text-white transition-colors hidden sm:block"
+              >
+                Vault
+              </button>
+              
+              {/* User menu component */}
+              <UserMenu />
             </div>
           </div>
         </div>
