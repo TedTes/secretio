@@ -181,6 +181,22 @@ CREATE TABLE IF NOT EXISTS user_github_connections (
   UNIQUE(github_user_id) -- One user per GitHub account
 );
 
+CREATE TABLE IF NOT EXISTS user_subscriptions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  stripe_customer_id VARCHAR(255),
+  stripe_subscription_id VARCHAR(255),
+  status VARCHAR(50) NOT NULL DEFAULT 'inactive',
+  plan_id VARCHAR(100) NOT NULL,
+  current_period_start TIMESTAMPTZ,
+  current_period_end TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  UNIQUE(user_id),
+  INDEX idx_stripe_customer_id (stripe_customer_id),
+  INDEX idx_stripe_subscription_id (stripe_subscription_id)
+);
 -- Create indexes
 CREATE INDEX IF NOT EXISTS idx_user_github_connections_user_id ON user_github_connections(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_github_connections_github_user_id ON user_github_connections(github_user_id);
