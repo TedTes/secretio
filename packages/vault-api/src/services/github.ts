@@ -2,6 +2,7 @@ import fetch from 'node-fetch';
 import { GitHubTree, GitHubRepository, GitHubFile } from '../types/github';
 import { supabase } from '../config/database';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { DatabaseService } from './database';
 export class GitHubService {
   private baseUrl = 'https://api.github.com';
   private token?: string;
@@ -238,18 +239,8 @@ export class GitHubService {
 
 
 
-  async getUserGitHubConnection(userId: string,supabase:SupabaseClient): Promise<any> {
-    const { data, error } = await supabase
-      .from('user_github_connections')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-  
-    if (error && error.code !== 'PGRST116') {
-      throw new Error(`Database error: ${error.message}`);
-    }
-  
-    return data;
+  async getUserGitHubConnection(userId: string,dbClient:DatabaseService): Promise<any> {
+    return await dbClient.getUserGithubConnection(userId);
   }
   async validateToken(access_token: string): Promise<boolean> {
     // Simple check: try to fetch the authenticated user
@@ -263,15 +254,8 @@ export class GitHubService {
     return response.ok;
   }
 
-  async removeUserGitHubToken(userId: string,supabase:SupabaseClient): Promise<void> {
-    const { error } = await supabase
-      .from('user_github_connections')
-      .delete()
-      .eq('user_id', userId);
-  
-    if (error) {
-      throw new Error(`Database error: ${error.message}`);
-    }
+  async removeUserGitHubToken(userId: string,dbClient:DatabaseService): Promise<void> {
+     await  dbClient.removeUserGithubConnection(userId);
   }
 
   async storeUserGitHubToken(userId: string, tokenData: any,supabase: SupabaseClient): Promise<void> {
