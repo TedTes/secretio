@@ -258,7 +258,7 @@ export class GitHubService {
      await  dbClient.removeUserGithubConnection(userId);
   }
 
-  async storeUserGitHubToken(userId: string, tokenData: any,supabase: SupabaseClient): Promise<void> {
+  async storeUserGitHubToken(userId: string, tokenData: any,dbClient:DatabaseService): Promise<void> {
     const { error } = await supabase
       .from('user_github_connections')
       .upsert({

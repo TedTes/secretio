@@ -16,7 +16,7 @@ router.post('/token/exchange',
   asyncHandler(async (req:AuthenticatedRequest & ValidatedRequest, res:Response) => {
     const { code, state } = req.validatedBody;
     const userId = req.user.id;
-    const supabase = (req as AuthenticatedRequest).supabaseClient;
+    const dbClient = (req as AuthenticatedRequest).dbClient;
     try {
       // Verify state parameter
       if (state !== 'repo-access') {
@@ -43,7 +43,7 @@ router.post('/token/exchange',
         github_name: githubUser.name,
         public_repos: githubUser.public_repos,
         private_repos: githubUser.total_private_repos || 0
-      },supabase);
+      },dbClient);
 
       res.status(200).json({
         success: true,

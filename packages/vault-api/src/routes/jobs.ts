@@ -28,7 +28,7 @@ const getUserScanService = async (userId: string,dbClient:DatabaseService): Prom
     await githubService.removeUserGitHubToken(userId,dbClient);
       throw createError('GitHub token expired, please reconnect', 401, 'GITHUB_TOKEN_EXPIRED');
     }
-  return new AsyncScanService(githubConnection.access_token, userId);
+  return new AsyncScanService(dbClient, userId);
 };
 
 // Validation schemas
