@@ -5,6 +5,7 @@ export interface User {
     github_username?: string;
     created_at?: string;
     updated_at?: string;
+    subscription: {status: 'active' | 'inactive'}
   }
   
   export interface AuthSession {

@@ -83,11 +83,17 @@ export default function UserMenu() {
         <div className="absolute right-0 mt-2 w-56 bg-slate-800 rounded-lg border border-gray-700 shadow-lg z-50 overflow-hidden">
           {/* User info header */}
           <div className="px-4 py-3 border-b border-gray-700 bg-slate-750">
-            <p className="text-sm text-white font-medium truncate">{user.email}</p>
-            {user.github_username && (
-              <p className="text-xs text-gray-400">@{user.github_username}</p>
-            )}
-          </div>
+  <p className="text-sm text-white font-medium truncate">{user.email}</p>
+  {user.github_username && (
+    <p className="text-xs text-gray-400">@{user.github_username}</p>
+  )}
+  <p className="text-xs text-gray-400 mt-1">
+    {user?.subscription?.status === 'active' 
+      ? '🔐 Vault Pro Member' 
+      : 'Free Plan'
+    }
+  </p>
+</div>
           
           {/* Menu items */}
           <div className="py-1">
