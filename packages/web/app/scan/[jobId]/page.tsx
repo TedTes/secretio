@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../lib/api';
 import { ScanJob, ScanResult } from '../../lib/types';
-
+import UserMenu from '../../components/auth/UserMenu';
 
 export interface ScanStats {
   files_scanned: number;           
@@ -170,10 +170,21 @@ export default function ScanResultsPage() {
       });
   
       if (!response.ok) {
-        throw new Error('Failed to store key in vault');
+        const errorData = await response.json().catch(() => ({}));
+        
+        if (response.status === 401) {
+          throw new Error('Authentication expired. Please log in again.');
+        } else if (response.status === 403) {
+          throw new Error('Access denied. Upgrade to vault plan required.');
+        } else if (response.status === 400) {
+          throw new Error(errorData.error || 'Invalid request. Check key format.');
+        } else {
+          throw new Error(errorData.error || `Server error (${response.status})`);
+        }
       }
   
       const data = await response.json();
+      console.log('✅ Key stored successfully:', data);
       
       setStoredKeys(prev => new Set([...prev, keyName]));
       setLastStoredKey({ keyName, service: result.service });
@@ -194,8 +205,12 @@ export default function ScanResultsPage() {
    setShowSuccessModal(true);
       
     } catch (error) {
-      console.error('Failed to store key:', error);
-      alert('❌ Failed to store key in vault. Please try again.');
+      console.error('❌ Failed to store key in vault:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`❌ Failed to store key: ${errorMessage}`);
+      if (errorMessage.includes('Authentication') || errorMessage.includes('expired')) {
+        console.warn('Authentication issue - user may need to re-login');
+      }
     } finally {
       setStoringKeys(prev => {
         const newSet = new Set(prev);
@@ -354,11 +369,13 @@ export default function ScanResultsPage() {
               <h1 className="text-lg font-semibold text-white">Scan Results</h1>
             </div>
             
+            {/* REPLACE basic text with UserMenu */}
             <div className="flex items-center space-x-4">
               <div className="text-xs text-gray-400">
                 Last updated: {lastUpdate.toLocaleTimeString()}
               </div>
-              <span className="text-gray-300">Welcome, {user?.email}</span>
+              {/* Replace this: <span className="text-gray-300">Welcome, {user?.email}</span> */}
+              <UserMenu />
             </div>
           </div>
         </div>

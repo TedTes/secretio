@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../lib/api';
-
+import UserMenu from '../../components/auth/UserMenu';
 import {GitHubUser, GitHubRepo, GitHubBranch} from "../../lib/types";
 
 export default function NewScanPage() {
@@ -248,6 +248,7 @@ export default function NewScanPage() {
               <h1 className="text-lg font-semibold text-white">New Security Scan</h1>
             </div>
             
+            {/* REPLACE GitHub user info with UserMenu */}
             <div className="flex items-center space-x-4">
               {githubUser && (
                 <div className="flex items-center space-x-2">
@@ -256,17 +257,12 @@ export default function NewScanPage() {
                     alt={githubUser.name || githubUser.login}
                     className="w-6 h-6 rounded-full"
                   />
-                  <span className="text-gray-300">@{githubUser.login}</span>
-                  <button
-                    onClick={handleGitHubDisconnect}
-                    className="text-gray-400 hover:text-gray-300 text-sm"
-                    title="Disconnect GitHub"
-                  >
-                    ✕
-                  </button>
+                  <span className="text-sm text-gray-300 hidden md:block">
+                    {githubUser.name || githubUser.login}
+                  </span>
                 </div>
               )}
-              <span className="text-gray-300">{user?.email}</span>
+              <UserMenu />
             </div>
           </div>
         </div>

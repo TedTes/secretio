@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
-
+import UserMenu from '../components/auth/UserMenu';
 interface VaultKey {
   id: string;
   keyName: string;
@@ -145,11 +145,12 @@ const apiKey = await vault.getKey('${keyName}');
                 ← Back to Dashboard
               </button>
               <div className="h-6 border-l border-gray-600"></div>
-              <h1 className="text-lg font-semibold text-white">🔐 API Key Vault</h1>
+              <h1 className="text-lg font-semibold text-white">Vault</h1>
             </div>
             
+            {/* ADD UserMenu instead of basic welcome text */}
             <div className="flex items-center space-x-4">
-              <span className="text-gray-300">Welcome, {user?.email}</span>
+              <UserMenu />
             </div>
           </div>
         </div>

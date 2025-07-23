@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../lib/api';
 import { ScanJob } from '../../lib/types';
-
+import UserMenu from '../../components/auth/UserMenu'; 
 export default function ScanHistoryPage() {
   const router = useRouter();
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -196,6 +196,7 @@ export default function ScanHistoryPage() {
               <h1 className="text-lg font-semibold text-white">Scan History</h1>
             </div>
             
+            {/* REPLACE basic text with UserMenu */}
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => router.push('/scan/new')}
@@ -203,7 +204,8 @@ export default function ScanHistoryPage() {
               >
                 New Scan
               </button>
-              <span className="text-gray-300">Welcome, {user?.email}</span>
+              {/* Replace this: <span className="text-gray-300">Welcome, {user?.email}</span> */}
+              <UserMenu />
             </div>
           </div>
         </div>
