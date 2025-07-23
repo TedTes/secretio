@@ -97,6 +97,9 @@ CREATE TABLE IF NOT EXISTS scan_jobs (
   progress_file TEXT
 );
 
+ALTER TABLE scan_jobs 
+ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+  
 -- Scan Results table
 CREATE TABLE IF NOT EXISTS scan_results (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
