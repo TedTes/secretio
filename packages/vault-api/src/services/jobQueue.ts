@@ -2,14 +2,15 @@ import { EventEmitter } from 'events';
 import { v4 as uuidv4 } from 'uuid';
 import { ScanJob, JobStatus, JobProgress, JobQueueStats } from '../types/jobs';
 import { ScanRepositoryRequest } from '../types/api';
-import { dbService } from './database';
+
 import { SupabaseClient } from '@supabase/supabase-js';
+import { DatabaseService } from './database';
 export class JobQueue extends EventEmitter {
   private jobs: Map<string, ScanJob> = new Map();
   private runningJobs: Set<string> = new Set();
   private maxConcurrentJobs: number = 3;
 
-  async createJob(request: ScanRepositoryRequest, userId: string): Promise<ScanJob> {
+  async createJob(request: ScanRepositoryRequest, userId: string,dbClient:DatabaseService): Promise<ScanJob> {
     const job: ScanJob = {
       id: uuidv4(),
       type: 'scan',
@@ -23,7 +24,7 @@ export class JobQueue extends EventEmitter {
 
     // Store in database for persistence
     try {
-      await dbService.createScanJob(job, userId);
+      await dbClient.createScanJob(job, userId);
       console.log(`📋 Created job ${job.id} for ${request.owner}/${request.repo} (user: ${userId || 'anonymous'})`);
     } catch (error) {
       console.error(`❌ Failed to save job to database: ${error instanceof Error ?error.message:error}`);
@@ -33,19 +34,19 @@ export class JobQueue extends EventEmitter {
     this.emit('jobCreated', job);
     
     // Try to process immediately if slots available
-    this.processNextJob();
+    this.processNextJob(dbClient);
     
     return job;
   }
 
-  async getJob(jobId: string,supabase:SupabaseClient): Promise<ScanJob | undefined> {
+  async getJob(jobId: string,dbClient:DatabaseService): Promise<ScanJob | undefined> {
     // Try memory first
     let job = this.jobs.get(jobId);
     
     if (!job) {
       // Try database
       try {
-        const dbJob = await dbService.getScanJob(jobId,supabase);
+        const dbJob = await dbClient.getScanJob(jobId);
         if (dbJob) {
           job = this.convertDbJobToScanJob(dbJob);
           this.jobs.set(jobId, job); // Cache in memory
@@ -58,7 +59,7 @@ export class JobQueue extends EventEmitter {
     return job;
   }
 
-  async updateJobStatus(jobId: string, status: JobStatus, error?: string): Promise<void> {
+  async updateJobStatus(jobId: string,dbClient:DatabaseService, status: JobStatus, error?: string): Promise<void> {
     const job = this.jobs.get(jobId);
     if (!job) return;
 
@@ -73,16 +74,15 @@ export class JobQueue extends EventEmitter {
       this.runningJobs.delete(jobId);
       
       // Process next job in queue
-      setTimeout(() => this.processNextJob(), 100);
+      setTimeout(() => this.processNextJob(dbClient), 100);
     }
     
     if (error) {
       job.error = error;
     }
-
     // Update database
     try {
-      await dbService.updateScanJobStatus(jobId, status, error);
+      await dbClient.updateScanJobStatus(jobId, status, error);
     } catch (dbError) {
       console.error(`❌ Failed to update job status in database: ${dbError instanceof Error?dbError.message:dbError}`);
     }
@@ -91,7 +91,7 @@ export class JobQueue extends EventEmitter {
     this.emit('jobStatusChanged', job);
   }
 
-  async updateJobProgress(jobId: string, progress: JobProgress): Promise<void> {
+  async updateJobProgress(jobId: string, progress: JobProgress,dbClient:DatabaseService): Promise<void> {
     const job = this.jobs.get(jobId);
     if (!job) return;
 
@@ -99,15 +99,20 @@ export class JobQueue extends EventEmitter {
     
     // Update database
     try {
-      await dbService.updateScanJobProgress(jobId, progress);
+      await dbClient.updateScanJobProgress(jobId, progress);
     } catch (error) {
       console.error(`❌ Failed to update job progress in database: ${error instanceof Error?error.message:error}`);
     }
 
-    this.emit('jobProgress', job);
+    this.emit('jobProgress', {
+      jobId,
+      progress,
+      job
+    });
+    console.log(`📈 Job ${jobId} progress: ${progress.current}/${progress.total} - ${progress.currentFile}`);
   }
 
-  async setJobResult(jobId: string, result: ScanJob['result']): Promise<void> {
+  async setJobResult(jobId: string, result: ScanJob['result'], dbClient:DatabaseService): Promise<void> {
     const job = this.jobs.get(jobId);
     if (!job) return;
 
@@ -117,14 +122,14 @@ export class JobQueue extends EventEmitter {
     if (result && result.success) {
       try {
         // Store scan results
-        await dbService.storeScanResults(jobId, result.results);
+        await dbClient.storeScanResults(jobId, result.results);
         
         // Store scan statistics
         const duration = job.completedAt && job.startedAt 
           ? job.completedAt.getTime() - job.startedAt.getTime()
           : 0;
         
-        await dbService.storeScanStats(jobId, result.stats, duration);
+        await dbClient.storeScanStats(jobId, result.stats, duration);
         
         console.log(`💾 Stored results for job ${jobId}: ${result.results.length} findings`);
       } catch (error) {
@@ -132,17 +137,28 @@ export class JobQueue extends EventEmitter {
       }
     }
   }
+// Add method to get current job status with progress
+  getJobWithProgress(jobId: string): ScanJob | null {
+  const job = this.jobs.get(jobId);
+  if (!job) return null;
 
-  async getUserJobs(userId: string, limit = 50): Promise<ScanJob[]> {
+  // Return job with current progress
+  return {
+    ...job,
+    progress: job.progress || { current: 0, total: 0 }
+  };
+}
+
+  async getUserJobs(userId: string, limit = 50,dbClient:DatabaseService): Promise<ScanJob[]> {
     try {
-      const dbJobs = await dbService.getUserScanJobs(userId, limit);
+      const dbJobs = await dbClient.getUserScanJobs(userId, limit);
       return dbJobs.map(dbJob => this.convertDbJobToScanJob(dbJob));
     } catch (error) {
       console.error(`❌ Failed to get user jobs: ${error instanceof Error?error.message:error}`);
       return [];
     }
   }
-  private processNextJob(): void {
+  private processNextJob(dbClient:DatabaseService): void {
     // Check if we can run more jobs
     if (this.runningJobs.size >= this.maxConcurrentJobs) {
       return;
@@ -158,7 +174,7 @@ export class JobQueue extends EventEmitter {
 
     // Mark as running
     this.runningJobs.add(pendingJob.id);
-    this.updateJobStatus(pendingJob.id, 'running');
+    this.updateJobStatus(pendingJob.id, dbClient,'running');
     
     // Emit job started event
     this.emit('jobStarted', pendingJob);
@@ -243,7 +259,7 @@ export class JobQueue extends EventEmitter {
   }
 }
 
-// Global job queue instance
+//Global job queue instance
 export const jobQueue = new JobQueue();
 
 // Cleanup old jobs every hour

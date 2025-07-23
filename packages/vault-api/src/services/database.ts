@@ -1,13 +1,18 @@
-import { supabase, DbScanJob, DbScanResult, DbScanStats, DbUser } from '../config/database';
+import { supabase, DbScanJob, DbScanResult, DbScanStats, DbUser,createSupabaseClientWithToken } from '../config/database';
 import { ScanJob, JobStatus, JobProgress } from '../types/jobs';
 import { ScanResult } from '@secretio/shared';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { createError } from '../middleware/errorHandler';
 
 export class DatabaseService {
+  private supabaseClient: SupabaseClient;
   
+  constructor(supabase:SupabaseClient) {
+   this.supabaseClient = supabase;
+  }
+ 
   // User management
-  async createUser(email?: string, githubUsername?: string): Promise<DbUser> {
+  static async  createUser(email?: string, githubUsername?: string): Promise<DbUser> {
     const { data, error } = await supabase
       .from('users')
       .insert({
@@ -21,7 +26,7 @@ export class DatabaseService {
     return data;
   }
 
-  async getUser(userId: string): Promise<DbUser | null> {
+  static async getUser(userId: string): Promise<DbUser | null> {
     const { data, error } = await supabase
       .from('users')
       .select('*')
@@ -33,7 +38,11 @@ export class DatabaseService {
     }
     return data;
   }
-
+  async getAuthenticatedUser() {
+    const { data: { user }, error } = await this.supabaseClient.auth.getUser();
+   
+   return  user;
+  }
   // Job management
   async createScanJob(job: ScanJob, userId: string): Promise<void> {
     const { error } = await supabase
@@ -79,57 +88,76 @@ export class DatabaseService {
   }
 
   async updateScanJobProgress(jobId: string, progress: JobProgress): Promise<void> {
-    const { error } = await supabase
+    const { error } = await this.supabaseClient
       .from('scan_jobs')
       .update({
         progress_current: progress.current,
         progress_total: progress.total,
-        progress_file: progress.currentFile
+        progress_file: progress.currentFile,
+        updated_at: new Date().toISOString()
       })
       .eq('id', jobId);
+  
+    if (error) throw new Error(`Failed to update scan job progress: ${error.message}`);
+  }
+// Add method to store intermediate scan results during scanning
+async storeIntermediateResults(jobId: string, newResults: ScanResult[]): Promise<void> {
+  if (!newResults || newResults.length === 0) return;
+  
 
-    if (error) throw new Error(`Failed to update job progress: ${error.message}`);
+  // Check if results already exist to avoid duplicates
+  const { data: existingResults } = await this.supabaseClient
+    .from('scan_results')
+    .select('file_path, line_number')
+    .eq('job_id', jobId);
+
+  const existing = new Set(
+    existingResults?.map(r => `${r.file_path}:${r.line_number}`) || []
+  );
+
+  // Filter out duplicates
+  const uniqueResults = newResults.filter(result => 
+    !existing.has(`${result.file_path}:${result.line_number}`)
+  );
+
+  if (uniqueResults.length === 0) return;
+
+  const dbResults = uniqueResults.map(result => ({
+    job_id: jobId,
+    service: result.service,
+    file_path: result.file_path,
+    line_number: result.line_number,
+    severity: result.severity,
+    description: result.description,
+    masked_value: this.maskApiKey(result.match)
+  }));
+
+  const { error } = await supabase
+    .from('scan_results')
+    .insert(dbResults);
+
+  if (error) throw new Error(`Failed to store intermediate scan results: ${error.message}`);
+}
+async getScanJob(jobId: string, userId?: string): Promise<DbScanJob | null> {
+
+  
+  const query = this.supabaseClient
+    .from('scan_jobs')
+    .select('*')
+    .eq('id', jobId);
+    
+  if (userId) {
+    query.eq('user_id', userId);
   }
 
-  async getScanJob(jobId: string, supabase: SupabaseClient): Promise<DbScanJob | null> {
-    // 1. Check if user is authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const { data, error } = await query.single();
 
-  
-    if (!user) {
-      console.log('❌ No authenticated user');
-      return null;
-    }
-
-    if(authError) {
-      throw createError(JSON.stringify(authError), 401, 'AUTHENTICATION_FAILED');
-    }
-  
-    // 3. Try the query
-    const { data, error } = await supabase
-      .from('scan_jobs')
-      .select('*')
-      .eq('id', jobId)
-      .single();
-  
-    console.log('📊 Query result:', { data, error });
-    
-    // 4. Additional debugging
-    if (error) {
-      console.log('🔍 Error details:', {
-        code: error.code,
-        message: error.message,
-        details: error.details,
-        hint: error.hint
-      });
-    }
-  
-    if (error && error.code !== 'PGRST116') {
-      throw new Error(`Failed to get scan job: ${error.message}`);
-    }
-    
-    return data;
+  if (error && error.code !== 'PGRST116') {
+    throw new Error(`Failed to get scan job: ${error.message}`);
   }
+  
+  return data;
+}
 
   async getUserScanJobs(userId: string, limit = 50): Promise<DbScanJob[]> {
     const { data, error } = await supabase
@@ -150,8 +178,8 @@ export class DatabaseService {
     const dbResults = results.map(result => ({
       job_id: jobId,
       service: result.service,
-      file_path: result.file,
-      line_number: result.line,
+      file_path: result.file_path,
+      line_number: result.line_number,
       severity: result.severity,
       description: result.description,
       masked_value: this.maskApiKey(result.match)
@@ -165,7 +193,7 @@ export class DatabaseService {
   }
 
   async getScanResults(jobId: string): Promise<DbScanResult[]> {
-    const { data, error } = await supabase
+    const { data, error } = await this.supabaseClient
       .from('scan_results')
       .select('*')
       .eq('job_id', jobId)
@@ -194,7 +222,7 @@ export class DatabaseService {
   }
 
   async getScanStats(jobId: string): Promise<DbScanStats | null> {
-    const { data, error } = await supabase
+    const { data, error } = await this.supabaseClient
       .from('scan_stats')
       .select('*')
       .eq('job_id', jobId)
@@ -248,6 +276,29 @@ export class DatabaseService {
     return `${start}${middle}${end}`;
   }
 
+  async getUserGithubConnection(userId:string){
+    const { data, error } = await this.supabaseClient
+    .from('user_github_connections')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') {
+    throw new Error(`Database error: ${error.message}`);
+  }
+
+  return data;
+  }
+  async removeUserGithubConnection(userId:string){
+    const { error } = await this.supabaseClient
+      .from('user_github_connections')
+      .delete()
+      .eq('user_id', userId);
+  
+    if (error) {
+      throw new Error(`Database error: ${error.message}`);
+    }
+  }
   // Health check
   async healthCheck(): Promise<boolean> {
     try {
@@ -264,4 +315,4 @@ export class DatabaseService {
 }
 
 // Global database service instance
-export const dbService = new DatabaseService();
+// export const dbService = new DatabaseService();
