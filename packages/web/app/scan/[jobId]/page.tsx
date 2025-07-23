@@ -597,7 +597,26 @@ export default function ScanResultsPage() {
 </div>
         
       </div>
-
+      {resultsData && resultsData?.stats?.keys_found > 0 && (
+  <div className="bg-gradient-to-r from-red-600/20 to-orange-600/20 border border-red-500/30 rounded-lg p-6 mb-8">
+    <div className="flex items-start justify-between">
+      <div>
+        <h3 className="text-xl font-bold text-white mb-2">
+          🚨 {resultsData.stats.keys_found} Exposed API Keys Found!
+        </h3>
+        <p className="text-gray-300 mb-4">
+          Secure them in an encrypted vault to prevent unauthorized access.
+        </p>
+        <button
+          onClick={() => router.push('/vault/upgrade')}
+          className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg text-white font-semibold transition-colors"
+        >
+          🔐 Secure in Vault - $15/month
+        </button>
+      </div>
+    </div>
+  </div>
+)}
       {/* Vault Upgrade Modal */}
       {showVaultModal && (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
