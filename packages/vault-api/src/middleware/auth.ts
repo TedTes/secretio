@@ -4,7 +4,7 @@ import {createSupabaseClientWithToken,supabase } from '../config/database';
 import { createError } from './errorHandler';
 import { ErrorResponse } from '../types/api';
 import {AuthenticatedRequest} from "../types/auth";
-
+import {DatabaseService} from "../services/database";
 /**
  * Extract JWT token from Authorization header
  */
@@ -38,8 +38,8 @@ export async function validateJWT(req: Request, res: Response, next: NextFunctio
       res.status(401).json(errorResponse);
       return;
     }
-     const supabase = createSupabaseClientWithToken(token);
- 
+      const supabase = createSupabaseClientWithToken(token);
+      const dbClient =  new DatabaseService(supabase);
     // Validate token with Supabase
     const { data: { user }, error } = await supabase.auth.getUser(token);
     if (error || !user) {
@@ -76,7 +76,7 @@ export async function validateJWT(req: Request, res: Response, next: NextFunctio
     };
     
     // Add authenticated Supabase client to request
-    (req as AuthenticatedRequest).supabaseClient = supabase;
+    (req as AuthenticatedRequest).dbClient  = dbClient;
 
     next();
   } catch (error) {
