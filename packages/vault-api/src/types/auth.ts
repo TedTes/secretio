@@ -132,5 +132,5 @@ export interface AuthenticatedRequest extends Request {
     exp?: string;
   };
   supabaseClient: typeof supabase;
-  dbClient: DatabaseService;
+  dbServiceInstance: DatabaseService;
 }

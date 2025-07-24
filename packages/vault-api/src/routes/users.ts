@@ -10,10 +10,10 @@ import { SupabaseClient } from '@supabase/supabase-js';
 const userRoutes = Router();
 
 // Helper function to get user-specific AsyncScanService
-const getUserScanService = async (userId: string,dbClient:DatabaseService): Promise<AsyncScanService> => {
+const getUserScanService = async (userId: string,dbServiceInstance:DatabaseService): Promise<AsyncScanService> => {
   // Get user's GitHub connection from database
   const githubService = new GitHubService();
-  const githubConnection = await githubService.getUserGitHubConnection(userId,dbClient);
+  const githubConnection = await githubService.getUserGitHubConnection(userId,dbServiceInstance);
 
   if (!githubConnection) {
     throw createError('GitHub account not connected', 400, 'GITHUB_NOT_CONNECTED');
@@ -22,10 +22,10 @@ const getUserScanService = async (userId: string,dbClient:DatabaseService): Prom
   const isValid = await userGithubService.validateToken(githubConnection.access_token);
   if (!isValid) {
       // Remove invalid token from database
-  await githubService.removeUserGitHubToken(userId,dbClient);
+  await githubService.removeUserGitHubToken(userId,dbServiceInstance);
     throw createError('GitHub token expired, please reconnect', 401, 'GITHUB_TOKEN_EXPIRED');
   }
-return new AsyncScanService(dbClient, userId);
+return new AsyncScanService(dbServiceInstance, userId);
 };
 
 // GET /api/users/:userId/jobs
@@ -34,9 +34,9 @@ userRoutes.get('/:userId/jobs',
   asyncHandler(async (req:Request, res: Response) => {
     const { userId } = req.params;
     const limit = parseInt(req.query.limit as string) || 50;
-    const dbClient = (req as AuthenticatedRequest).dbClient;
+    const dbServiceInstance = (req as AuthenticatedRequest).dbServiceInstance;
 
-    const asyncScanService = await getUserScanService(userId,dbClient);
+    const asyncScanService = await getUserScanService(userId,dbServiceInstance);
     const jobs = await asyncScanService.getUserJobs(userId, limit);
 
     const response: ApiResponse = {
@@ -57,7 +57,7 @@ userRoutes.get('/:userId/stats',
   asyncHandler(async (req:AuthenticatedRequest, res: Response) => {
     const { userId } = req.params;
 
-    const stats = await req.dbClient.getUserStats(userId);
+    const stats = await req.dbServiceInstance.getUserStats(userId);
 
     const response: ApiResponse = {
       success: true,

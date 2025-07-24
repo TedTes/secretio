@@ -239,8 +239,8 @@ export class GitHubService {
 
 
 
-  async getUserGitHubConnection(userId: string,dbClient:DatabaseService): Promise<any> {
-    return await dbClient.getUserGithubConnection(userId);
+  async getUserGitHubConnection(userId: string,dbServiceInstance:DatabaseService): Promise<any> {
+    return await dbServiceInstance.getUserGithubConnection(userId);
   }
   async validateToken(access_token: string): Promise<boolean> {
     // Simple check: try to fetch the authenticated user
@@ -254,11 +254,11 @@ export class GitHubService {
     return response.ok;
   }
 
-  async removeUserGitHubToken(userId: string,dbClient:DatabaseService): Promise<void> {
-     await  dbClient.removeUserGithubConnection(userId);
+  async removeUserGitHubToken(userId: string,dbServiceInstance:DatabaseService): Promise<void> {
+     await  dbServiceInstance.removeUserGithubConnection(userId);
   }
 
-  async storeUserGitHubToken(userId: string, tokenData: any,dbClient:DatabaseService): Promise<void> {
+  async storeUserGitHubToken(userId: string, tokenData: any,dbServiceInstance:DatabaseService): Promise<void> {
     const { error } = await supabase
       .from('user_github_connections')
       .upsert({

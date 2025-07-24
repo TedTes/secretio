@@ -13,10 +13,10 @@ import { ScanResult } from '@secretio/shared';
 const jobRoutes = Router();
 
 // Helper function to get user-specific AsyncScanService
-const getUserScanService = async (userId: string,dbClient:DatabaseService): Promise<AsyncScanService> => {
+const getUserScanService = async (userId: string,dbServiceInstance:DatabaseService): Promise<AsyncScanService> => {
     // Get user's GitHub connection from database
     const githubService = new GitHubService();
-    const githubConnection = await githubService.getUserGitHubConnection(userId,dbClient);
+    const githubConnection = await githubService.getUserGitHubConnection(userId,dbServiceInstance);
   
     if (!githubConnection) {
       throw createError('GitHub account not connected', 400, 'GITHUB_NOT_CONNECTED');
@@ -25,10 +25,10 @@ const getUserScanService = async (userId: string,dbClient:DatabaseService): Prom
     const isValid = await userGithubService.validateToken(githubConnection.access_token);
     if (!isValid) {
         // Remove invalid token from database
-    await githubService.removeUserGitHubToken(userId,dbClient);
+    await githubService.removeUserGitHubToken(userId,dbServiceInstance);
       throw createError('GitHub token expired, please reconnect', 401, 'GITHUB_TOKEN_EXPIRED');
     }
-  return new AsyncScanService(dbClient, userId);
+  return new AsyncScanService(dbServiceInstance, userId);
 };
 
 // Validation schemas
@@ -44,12 +44,12 @@ jobRoutes.get('/status/:jobId',
   requireAuth, requireJobOwnership(),
   validateParams(jobIdSchema),
   asyncHandler(async (req: AuthenticatedRequest & ValidatedRequest, res: Response) => {
-    const dbClient = (req as AuthenticatedRequest).dbClient;
+    const dbServiceInstance = (req as AuthenticatedRequest).dbServiceInstance;
     const { jobId } = req.validatedParams;
     const userId = req.user.id;
     
     // Create user-specific service instance
-    const asyncScanService = await getUserScanService(userId,dbClient);
+    const asyncScanService = await getUserScanService(userId,dbServiceInstance);
     const job = await asyncScanService.getJobStatus(jobId);
     
     if (!job) {
@@ -81,20 +81,20 @@ jobRoutes.get('/results/:jobId',
   validateParams(jobIdSchema),
   asyncHandler(async (req: AuthenticatedRequest & ValidatedRequest, res: Response) => {
     const { jobId } = req.validatedParams;
-    const dbClient = (req as AuthenticatedRequest).dbClient;
+    const dbServiceInstance = (req as AuthenticatedRequest).dbServiceInstance;
     const userId = await getUserId(req);
   
     if (!userId) {
       throw createError('User ID required', 401);
     }
     // Verify job belongs to user
-    const userJob = await req.dbClient.getScanJob(jobId);
+    const userJob = await req.dbServiceInstance.getScanJob(jobId);
     if (!userJob) {
       throw createError('Scan job not found', 404);
     }
 
     // Create user-specific service instance
-    const asyncScanService = await getUserScanService(userId,dbClient);
+    const asyncScanService = await getUserScanService(userId,dbServiceInstance);
     const job = await asyncScanService.getJobStatus(jobId);
     
     if (!job) {
@@ -102,8 +102,8 @@ jobRoutes.get('/results/:jobId',
     }
 
     // Get scan results
-    const results = await req.dbClient.getScanResults(jobId);
-    let stats = await req.dbClient.getScanStats(jobId);
+    const results = await req.dbServiceInstance.getScanResults(jobId);
+    let stats = await req.dbServiceInstance.getScanStats(jobId);
 
     // If no stats in DB yet (during running scan), calculate from results
     if (!stats || job.status === 'running') {
@@ -162,9 +162,9 @@ jobRoutes.get('/queue',
   requireAuth, 
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const userId = req.user.id;
-    const dbClient = (req as AuthenticatedRequest).dbClient;
+    const dbServiceInstance = (req as AuthenticatedRequest).dbServiceInstance;
     // Create user-specific service instance
-    const asyncScanService = await getUserScanService(userId,dbClient);
+    const asyncScanService = await getUserScanService(userId,dbServiceInstance);
     const queueInfo = asyncScanService.getQueueStats();
     
     const response: ApiResponse = {

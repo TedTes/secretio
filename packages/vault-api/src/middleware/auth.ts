@@ -39,7 +39,7 @@ export async function validateJWT(req: Request, res: Response, next: NextFunctio
       return;
     }
       const supabase = createSupabaseClientWithToken(token);
-      const dbClient =  new DatabaseService(supabase);
+      const dbServiceInstance =  new DatabaseService(supabase);
     // Validate token with Supabase
     const { data: { user }, error } = await supabase.auth.getUser(token);
     if (error || !user) {
@@ -76,7 +76,7 @@ export async function validateJWT(req: Request, res: Response, next: NextFunctio
     };
     
     // Add authenticated Supabase client to request
-    (req as AuthenticatedRequest).dbClient  = dbClient;
+    (req as AuthenticatedRequest).dbServiceInstance  = dbServiceInstance;
 
     next();
   } catch (error) {

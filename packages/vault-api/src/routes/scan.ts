@@ -15,10 +15,10 @@ import { DatabaseService } from '../services/database';
 const scanRoutes = Router();
 
 // Helper function to get user-specific AsyncScanService
-const getUserScanService = async (userId: string,owner:string, repo: string, dbClient:DatabaseService): Promise<AsyncScanService> => {
+const getUserScanService = async (userId: string,owner:string, repo: string, dbServiceInstance:DatabaseService): Promise<AsyncScanService> => {
   // Get user's GitHub connection from database
   const githubService = new GitHubService();
-  const githubConnection = await githubService.getUserGitHubConnection(userId,dbClient);
+  const githubConnection = await githubService.getUserGitHubConnection(userId,dbServiceInstance);
 
   if (!githubConnection) {
     throw createError('GitHub account not connected', 400, 'GITHUB_NOT_CONNECTED');
@@ -27,7 +27,7 @@ const getUserScanService = async (userId: string,owner:string, repo: string, dbC
   const isValid = await userGithubService.validateToken(githubConnection.access_token);
   if (!isValid) {
       // Remove invalid token from database
-  await githubService.removeUserGitHubToken(userId,dbClient);
+  await githubService.removeUserGitHubToken(userId,dbServiceInstance);
     throw createError('GitHub token expired, please reconnect', 401, 'GITHUB_TOKEN_EXPIRED');
   }
   const repoInfo = await userGithubService.getRepository(owner, repo);
@@ -39,7 +39,7 @@ const getUserScanService = async (userId: string,owner:string, repo: string, dbC
     )
   }
 
-  return new AsyncScanService(dbClient,userId);
+  return new AsyncScanService(dbServiceInstance,userId);
 };
 // POST /api/scan/repository
 scanRoutes.post('/repository',
@@ -56,7 +56,7 @@ scanRoutes.post('/repository',
     console.log(`📡 [${scanId}] Starting scan for ${owner}/${repo}${branch ? `@${branch}` : ''}`);
 
   
-    const scanService = new ScanService(req.dbClient);
+    const scanService = new ScanService(req.dbServiceInstance);
 
     console.log(`📡 Starting scan for ${owner}/${repo}`);
 
@@ -102,7 +102,7 @@ scanRoutes.post('/multiple',
   
       console.log(`📡 [${scanId}] Starting bulk scan for ${repositories.length} repositories`);
   
-      const scanService = new ScanService(req.dbClient);
+      const scanService = new ScanService(req.dbServiceInstance);
       const results = await scanService.scanMultipleRepositories(repositories);
   
       const duration = Date.now() - startTime;
@@ -135,7 +135,7 @@ scanRoutes.post('/async',
     requireAuth, injectUserContext,
     validateBody(scanRepositorySchema),
     asyncHandler(async (req: AuthenticatedRequest & ValidatedRequest<ScanRepositoryRequest>, res: Response) => {
-    const dbClient = (req as AuthenticatedRequest).dbClient;
+    const dbServiceInstance = (req as AuthenticatedRequest).dbServiceInstance;
 
       const { owner, repo, branch} = req.validatedBody;
       const userId = getUserId(req);
@@ -156,7 +156,7 @@ scanRoutes.post('/async',
     });
   }
       
-    const asyncScanService = await getUserScanService(userId,owner, repo, dbClient);
+    const asyncScanService = await getUserScanService(userId,owner, repo, dbServiceInstance);
 
 
       const job = await asyncScanService.queueScan({
@@ -185,7 +185,7 @@ scanRoutes.post('/async',
 // GET /api/scan/test
 scanRoutes.get('/test', 
     asyncHandler(async (req:AuthenticatedRequest & ValidatedRequest<ScanMultipleRequest>, res: Response) => {
-      const scanService = new ScanService(req.dbClient);
+      const scanService = new ScanService(req.dbServiceInstance);
       
       const result = await scanService.scanRepository({
         owner: 'octocat',

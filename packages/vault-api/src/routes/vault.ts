@@ -14,7 +14,7 @@ vaultRoutes.post('/keys',
   requireAuth, 
   injectUserContext,
   asyncHandler(async (req: AuthenticatedRequest, res:Response) => {
-    const supabase = req.supabaseClient;
+    const dbServiceInstance = req.dbServiceInstance;
     const userId = getUserId(req);
     
     if (!userId) {
@@ -32,7 +32,7 @@ vaultRoutes.post('/keys',
       service, 
       value,
       environment
-    }, supabase);
+    }, dbServiceInstance);
 
     res.json({
       success: true,
@@ -49,7 +49,7 @@ vaultRoutes.get('/keys',
   requireAuth,
   injectUserContext, 
   asyncHandler(async (req: AuthenticatedRequest, res:Response) => {
-    const supabase = req.supabaseClient;
+    const dbServiceInstance = req.dbServiceInstance;
     const userId = getUserId(req);
     
     if (!userId) {
@@ -57,7 +57,7 @@ vaultRoutes.get('/keys',
     }
 
     const environment = (req.query.environment as string) || 'production';
-    const keys = await vaultService.getUserKeys(userId, environment, supabase);
+    const keys = await vaultService.getUserKeys(userId, environment, dbServiceInstance);
 
     res.json({
       success: true,
@@ -75,7 +75,7 @@ vaultRoutes.get('/keys/:keyName',
   requireAuth,
   injectUserContext,
   asyncHandler(async (req: AuthenticatedRequest, res:Response) => {
-    const supabase = req.supabaseClient;
+    const dbServiceInstance = req.dbServiceInstance;
     const userId = getUserId(req);
     const { keyName } = req.params;
     const environment = (req.query.environment as string) || 'production';
@@ -84,7 +84,7 @@ vaultRoutes.get('/keys/:keyName',
       throw createError('User ID required', 401);
     }
 
-    const keyData = await vaultService.getKeyValue(userId, keyName, environment, supabase);
+    const keyData = await vaultService.getKeyValue(userId, keyName, environment, dbServiceInstance);
 
     res.json({
       success: true,
@@ -104,7 +104,7 @@ vaultRoutes.delete('/keys/:keyName',
   requireAuth,
   injectUserContext,
   asyncHandler(async (req: AuthenticatedRequest, res:Response) => {
-    const supabase = req.supabaseClient;
+    const dbServiceInstance = req.dbServiceInstance;
     const userId = getUserId(req);
     const { keyName } = req.params;
     const environment = (req.query.environment as string) || 'production';
@@ -113,7 +113,7 @@ vaultRoutes.delete('/keys/:keyName',
       throw createError('User ID required', 401);
     }
 
-    await vaultService.deleteKey(userId, keyName, environment, supabase);
+    await vaultService.deleteKey(userId, keyName, environment, dbServiceInstance);
 
     res.json({
       success: true,
@@ -131,7 +131,7 @@ vaultRoutes.get('/retrieve/:keyName',
   requireAuth,
   injectUserContext,
   asyncHandler(async (req: AuthenticatedRequest, res:Response) => {
-    const supabase = req.supabaseClient;
+    const dbServiceInstance = req.dbServiceInstance;
     const userId = getUserId(req);
     const { keyName } = req.params;
     const environment = (req.query.environment as string) || 'production';
@@ -141,7 +141,7 @@ vaultRoutes.get('/retrieve/:keyName',
     }
 
     try {
-      const keyData = await vaultService.getKeyValue(userId, keyName, environment, supabase);
+      const keyData = await vaultService.getKeyValue(userId, keyName, environment, dbServiceInstance);
 
       res.json({
         success: true,
@@ -168,7 +168,7 @@ vaultRoutes.post('/verify',
   requireAuth,
   injectUserContext,
   asyncHandler(async (req: AuthenticatedRequest, res:Response) => {
-    const supabase = req.supabaseClient;
+    const dbServiceInstance = req.dbServiceInstance;
     const userId = getUserId(req);
     const environment = (req.body.environment as string) || 'production';
     
@@ -177,7 +177,7 @@ vaultRoutes.post('/verify',
     }
 
     try {
-      const keys = await vaultService.getUserKeys(userId, environment, supabase);
+      const keys = await vaultService.getUserKeys(userId, environment, dbServiceInstance);
       
       res.json({
         success: true,
@@ -208,7 +208,7 @@ vaultRoutes.get('/snippet/:keyName',
   requireAuth,
   injectUserContext,
   asyncHandler(async (req: AuthenticatedRequest, res:Response) => {
-    const supabase = req.supabaseClient;
+    const dbServiceInstance = req.dbServiceInstance;
     const userId = getUserId(req);
     const { keyName } = req.params;
     const environment = (req.query.environment as string) || 'production';
@@ -220,7 +220,7 @@ vaultRoutes.get('/snippet/:keyName',
 
     try {
       // Verify user owns this key
-      const keys = await vaultService.getUserKeys(userId, environment, supabase);
+      const keys = await vaultService.getUserKeys(userId, environment, dbServiceInstance);
       const key = keys.find(k => k.keyName === keyName);
       
       if (!key) {

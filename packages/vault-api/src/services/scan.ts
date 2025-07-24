@@ -27,12 +27,12 @@ export interface ScanResponse {
 export class ScanService {
   private githubService: GitHubService;
   private scanner: Scanner;
-  private dbClient: DatabaseService;
+  private dbServiceInstance: DatabaseService;
 
-  constructor(dbClient:DatabaseService,githubToken?: string) {
+  constructor(dbServiceInstance:DatabaseService,githubToken?: string) {
     this.githubService = new GitHubService(githubToken);
     this.scanner = new Scanner();
-    this.dbClient = dbClient;
+    this.dbServiceInstance = dbServiceInstance;
   }
 
   // Original synchronous scan method (keeping for backward compatibility)
@@ -98,7 +98,7 @@ export class ScanService {
 
       // Update job status to running
       if (jobQueue) {
-        await jobQueue.updateJobStatus(jobId, this.dbClient,'running');
+        await jobQueue.updateJobStatus(jobId, this.dbServiceInstance,'running');
       }
 
       // Step 1: Get repository info and files
@@ -115,7 +115,7 @@ export class ScanService {
           current: 0,
           total: totalFiles,
           currentFile: 'Starting scan...'
-        },this.dbClient);
+        },this.dbServiceInstance);
       }
 
       // Step 3: Process files in batches for real-time updates
@@ -134,7 +134,7 @@ export class ScanService {
                 current: filesScanned + 1,
                 total: totalFiles,
                 currentFile: file.path
-              },this.dbClient);
+              },this.dbServiceInstance);
             }
 
             const content = await this.githubService.getFileContent(file.download_url);
@@ -161,7 +161,7 @@ export class ScanService {
         // Store intermediate results after each batch
         if (batchResults.length > 0) {
           try {
-            await this.dbClient.storeIntermediateResults(jobId, batchResults);
+            await this.dbServiceInstance.storeIntermediateResults(jobId, batchResults);
             console.log(`📊 Stored ${batchResults.length} new results (total: ${allResults.length})`);
           } catch (error) {
             console.error(`❌ Failed to store intermediate results:`, error);
@@ -194,10 +194,10 @@ export class ScanService {
           results: allResults,
           stats,
           repository: stats.repository
-        }, this.dbClient);
+        }, this.dbServiceInstance);
 
         // Update job status to completed
-        await jobQueue.updateJobStatus(jobId, this.dbClient,'completed');
+        await jobQueue.updateJobStatus(jobId, this.dbServiceInstance,'completed');
       }
 
       console.log(`✅ Real-time scan completed: ${allResults.length} API keys found in ${filesScanned} files`);
@@ -208,7 +208,7 @@ export class ScanService {
       if (jobQueue) {
         await jobQueue.updateJobStatus(
           jobId, 
-          this.dbClient,
+          this.dbServiceInstance,
           'failed', 
           error instanceof Error ? error.message : 'Unknown scan error'
         );

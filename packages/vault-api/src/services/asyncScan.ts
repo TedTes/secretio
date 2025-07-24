@@ -8,16 +8,16 @@ import { DatabaseService } from './database';
 export class AsyncScanService {
   private scanService: ScanService;
   private userId: string;
-  private dbClient:DatabaseService;
-  constructor(dbClient:DatabaseService, userId: string) {
+  private dbServiceInstance:DatabaseService;
+  constructor(dbServiceInstance:DatabaseService, userId: string) {
 
     
     if (!userId) {
       throw new Error('User ID is required for AsyncScanService');
     }
-    this.dbClient = dbClient;
+    this.dbServiceInstance = dbServiceInstance;
     this.userId = userId;
-    this.scanService = new ScanService(this.dbClient);
+    this.scanService = new ScanService(this.dbServiceInstance);
     
     // Listen for job events
     jobQueue.on('jobStarted', this.processJob.bind(this));
@@ -25,14 +25,14 @@ export class AsyncScanService {
 
   async queueScan(request: ScanRepositoryRequest): Promise<ScanJob> {
     // Create job in queue
-    const job = await jobQueue.createJob(request, this.userId,this.dbClient);
+    const job = await jobQueue.createJob(request, this.userId,this.dbServiceInstance);
     
     console.log(`⏳ Queued scan job ${job.id} for ${request.owner}/${request.repo}`);
     
     return job;
   }
   async getUserJobs(userId: string, limit = 50): Promise<ScanJob[]> {
-    return jobQueue.getUserJobs(userId, limit,this.dbClient);
+    return jobQueue.getUserJobs(userId, limit,this.dbServiceInstance);
   }
   private async processJob(job: ScanJob): Promise<void> {
     try {
@@ -48,7 +48,7 @@ export class AsyncScanService {
           current: 0,
           total: 0,
           currentFile: 'Discovering files...'
-        },this.dbClient);
+        },this.dbServiceInstance);
         
         const result = await originalGetRepositoryTree(...args);
         
@@ -56,7 +56,7 @@ export class AsyncScanService {
           current: 0,
           total: result.length,
           currentFile: 'Starting scan...'
-        },this.dbClient);
+        },this.dbServiceInstance);
         
         return result;
       };
@@ -65,19 +65,19 @@ export class AsyncScanService {
       const result = await this.scanService.scanRepository(job.request);
       
       // Store result and mark as completed
-      jobQueue.setJobResult(job.id, result,this.dbClient);
-      jobQueue.updateJobStatus(job.id, this.dbClient,'completed');
+      jobQueue.setJobResult(job.id, result,this.dbServiceInstance);
+      jobQueue.updateJobStatus(job.id, this.dbServiceInstance,'completed');
       
       console.log(`✅ Job ${job.id} completed: ${result.stats.keys_found} keys found`);
       
     } catch (error) {
       console.error(`❌ Job ${job.id} failed:`, error instanceof Error? error.message:`processing job failed, ${error}`);
-      jobQueue.updateJobStatus(job.id, this.dbClient,'failed', error instanceof Error? error.message:`processing job failed, ${error}`);
+      jobQueue.updateJobStatus(job.id, this.dbServiceInstance,'failed', error instanceof Error? error.message:`processing job failed, ${error}`);
     }
   }
 
   getJobStatus(jobId: string): Promise<ScanJob | undefined> {
-    return jobQueue.getJob(jobId,this.dbClient);
+    return jobQueue.getJob(jobId,this.dbServiceInstance);
   }
 
   async getJobWithResults(jobId: string): Promise<{
@@ -85,7 +85,7 @@ export class AsyncScanService {
     results?: any[];
     stats?: any;
   }> {
-    const job = await jobQueue.getJob(jobId,this.dbClient);
+    const job = await jobQueue.getJob(jobId,this.dbServiceInstance);
     
     if (!job || job.status !== 'completed') {
       return { job };
@@ -93,8 +93,8 @@ export class AsyncScanService {
 
     try {
       const [results, stats] = await Promise.all([
-        this.dbClient.getScanResults(jobId),
-        this.dbClient.getScanStats(jobId)
+        this.dbServiceInstance.getScanResults(jobId),
+        this.dbServiceInstance.getScanStats(jobId)
       ]);
 
       return { job, results, stats };

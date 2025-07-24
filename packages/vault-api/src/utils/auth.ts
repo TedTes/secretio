@@ -113,8 +113,8 @@ export function requirePermission(permission: Permission, resourceGetter?: (req:
  */
 export function requireJobOwnership() {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const dbClient = (req as AuthenticatedRequest).dbClient;
-    const user= await dbClient.getAuthenticatedUser();
+    const dbServiceInstance = (req as AuthenticatedRequest).dbServiceInstance;
+    const user= await dbServiceInstance.getAuthenticatedUser();
     const { jobId } = req.params;
     if (!user) {
       const errorResponse: ErrorResponse = {
@@ -133,7 +133,7 @@ export function requireJobOwnership() {
     }
     
     try {
-      const job = await dbClient.getScanJob(jobId);
+      const job = await dbServiceInstance.getScanJob(jobId);
       if (!job) {
         const errorResponse: ErrorResponse = {
           success: false,
