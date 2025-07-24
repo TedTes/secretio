@@ -3,7 +3,8 @@ import { ScanJob, JobStatus, JobProgress } from '../types/jobs';
 import { ScanResult } from '@secretio/shared';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { createError } from '../middleware/errorHandler';
-
+import { encryptionService } from '../utils/encryption';
+import {StoreKeyRequest } from "../types";
 export class DatabaseService {
   private supabaseClient: SupabaseClient;
   
@@ -276,6 +277,87 @@ async getScanJob(jobId: string, userId?: string): Promise<DbScanJob | null> {
     return `${start}${middle}${end}`;
   }
 
+  async storeKey(userId:string, keyData:StoreKeyRequest) {
+    const {keyName, service, value, environment = 'production'} = keyData;
+
+    // Encrypt the value using AES-256
+    const encryptedValue = encryptionService.encrypt(value);
+    const maskedValue = encryptionService.mask(value);
+    const valueHash = encryptionService.hash(value); // For duplicate detection
+    return  await supabase
+        .from('vault_keys')
+        .insert({
+          user_id: userId,
+          key_name: keyName,
+          service: service,
+          encrypted_value: encryptedValue,
+          masked_value: maskedValue,
+          value_hash: valueHash,
+          environment: environment,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select('id, key_name, service, environment, masked_value, created_at, updated_at')
+        .single();
+  }
+  async getUserKeys(userId:string, environment: string = 'production') {
+   return  await supabase
+        .from('vault_keys')
+        .select('id, key_name, service, environment, masked_value, created_at, updated_at, last_accessed')
+        .eq('user_id', userId)
+        .eq('environment', environment)
+        .order('created_at', { ascending: false });
+  }
+  async getKeyValue(userId:string, keyName:string , environment:string) {
+     //   Get encrypted key from database
+      return await supabase
+        .from('vault_keys')
+        .select('encrypted_value, service, id')
+        .eq('user_id', userId)
+        .eq('key_name', keyName)
+        .eq('environment', environment)
+        .single();
+  }
+  async updateLastAccessedTimeStamp(data:any) {
+     // Update last accessed timestamp
+      await supabase
+        .from('vault_keys')
+        .update({ 
+          last_accessed: new Date().toISOString(),
+          access_count: supabase.rpc('increment_access_count', { key_id: data.id })
+        })
+        .eq('id', data.id);
+  }
+  async deleteKey(userId:string,keyName:string, environment:string) {
+  return  await supabase
+    .from('vault_keys')
+    .delete()
+    .eq('user_id', userId)
+    .eq('key_name', keyName)
+    .eq('environment', environment);
+  }
+  async rotateKey(userId:string, keyName:string, newValue:string, environment:string) {
+      // Encrypt new value
+      const encryptedValue = encryptionService.encrypt(newValue);
+      const maskedValue = encryptionService.mask(newValue);
+      const valueHash = encryptionService.hash(newValue);
+
+          // // Update in database
+      return await supabase
+        .from('vault_keys')
+        .update({
+          encrypted_value: encryptedValue,
+          masked_value: maskedValue,
+          value_hash: valueHash,
+          updated_at: new Date().toISOString(),
+          rotation_count: supabase.rpc('increment_rotation_count', { key_name: keyName })
+        })
+        .eq('user_id', userId)
+        .eq('key_name', keyName)
+        .eq('environment', environment)
+        .select('id, key_name, service, environment, masked_value, created_at, updated_at')
+        .single();
+  }
   async getUserGithubConnection(userId:string){
     const { data, error } = await this.supabaseClient
     .from('user_github_connections')
@@ -313,6 +395,3 @@ async getScanJob(jobId: string, userId?: string): Promise<DbScanJob | null> {
     }
   }
 }
-
-// Global database service instance
-// export const dbService = new DatabaseService();
