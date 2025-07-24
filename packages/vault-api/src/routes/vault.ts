@@ -289,6 +289,27 @@ vaultRoutes.get('/snippet/:keyName',
     }
   })
 );
+
+vaultRoutes.get('/test-encryption',
+  requireAuth,
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const vaultService = new VaultService();
+      const testResult = await vaultService.testEncryption();
+      
+      res.json({
+        success: true,
+        data: testResult
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: 'Encryption test failed',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  })
+);
 // GET /api/vault/health - Simple health check for vault service
 vaultRoutes.get('/health',
   asyncHandler(async (req:Request, res:Response) => {
