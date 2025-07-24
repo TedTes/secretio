@@ -8,53 +8,53 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 ALTER TABLE users 
-ADD COLUMN IF NOT EXISTS name TEXT,
-ADD COLUMN IF NOT EXISTS avatar_url TEXT,
-ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'user',
-ADD COLUMN IF NOT EXISTS subscription_tier TEXT DEFAULT 'free';
+  ADD COLUMN IF NOT EXISTS name TEXT,
+  ADD COLUMN IF NOT EXISTS avatar_url TEXT,
+  ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'user',
+  ADD COLUMN IF NOT EXISTS subscription_tier TEXT DEFAULT 'free';
 
 ALTER TABLE users DROP CONSTRAINT IF EXISTS users_pkey;
 
 -- Add foreign key constraint to reference auth.users
 ALTER TABLE users 
-ADD CONSTRAINT users_id_fkey 
-FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE;
+  ADD CONSTRAINT users_id_fkey 
+  FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE;
 
-ALTER TABLE users ADD PRIMARY KEY (id);
-ALTER TABLE users ALTER COLUMN email SET NOT NULL;
+  ALTER TABLE users ADD PRIMARY KEY (id);
+  ALTER TABLE users ALTER COLUMN email SET NOT NULL;
 
--- Function to handle new Supabase users
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO public.users (
-    id, 
-    email, 
-    name, 
-    avatar_url,
-    github_username
-  )
-  VALUES (
-    NEW.id,
-    NEW.email,
-    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name'),
-    NEW.raw_user_meta_data->>'avatar_url',
-    CASE 
-      WHEN NEW.app_metadata->>'provider' = 'github' 
-      THEN NEW.raw_user_meta_data->>'user_name'
-      ELSE NULL 
-    END
-  )
-  ON CONFLICT (id) DO UPDATE SET
-    email = EXCLUDED.email,
-    name = EXCLUDED.name,
-    avatar_url = EXCLUDED.avatar_url,
-    github_username = COALESCE(EXCLUDED.github_username, users.github_username),
-    updated_at = NOW();
-  
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+  -- Function to handle new Supabase users
+  CREATE OR REPLACE FUNCTION public.handle_new_user()
+  RETURNS TRIGGER AS $$
+  BEGIN
+    INSERT INTO public.users (
+      id, 
+      email, 
+      name, 
+      avatar_url,
+      github_username
+    )
+    VALUES (
+      NEW.id,
+      NEW.email,
+      COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name'),
+      NEW.raw_user_meta_data->>'avatar_url',
+      CASE 
+        WHEN NEW.app_metadata->>'provider' = 'github' 
+        THEN NEW.raw_user_meta_data->>'user_name'
+        ELSE NULL 
+      END
+    )
+    ON CONFLICT (id) DO UPDATE SET
+      email = EXCLUDED.email,
+      name = EXCLUDED.name,
+      avatar_url = EXCLUDED.avatar_url,
+      github_username = COALESCE(EXCLUDED.github_username, users.github_username),
+      updated_at = NOW();
+    
+    RETURN NEW;
+  END;
+  $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Create trigger
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
@@ -262,6 +262,11 @@ CREATE INDEX IF NOT EXISTS idx_vault_keys_environment ON vault_keys(environment)
 -- Enable RLS on vault_keys table
 ALTER TABLE vault_keys ENABLE ROW LEVEL SECURITY;
 
+ALTER TABLE vault_keys 
+ADD COLUMN IF NOT EXISTS masked_value TEXT,
+ADD COLUMN IF NOT EXISTS value_hash VARCHAR(64),
+ADD COLUMN IF NOT EXISTS access_count INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS rotation_count INTEGER DEFAULT 0;
 -- RLS policies for vault_keys
 CREATE POLICY "Users can view own vault keys" 
   ON vault_keys FOR SELECT 
