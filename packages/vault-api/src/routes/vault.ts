@@ -55,18 +55,22 @@ vaultRoutes.get('/keys',
     if (!userId) {
       throw createError('User ID required', 401);
     }
-
-    const environment = (req.query.environment as string) || 'production';
-    const keys = await vaultService.getUserKeys(userId, environment, dbServiceInstance);
-
-    res.json({
-      success: true,
-      data: {
-        keys,
-        environment,
-        count: keys.length
-      }
-    });
+    try {
+      const environment = (req.query.environment as string) || 'production';
+      console.log(`📊 Fetching vault keys for user ${userId}, environment: ${environment}`);
+      const keys = await vaultService.getUserKeys(userId, environment, dbServiceInstance);
+      res.json({
+        success: true,
+        data: {
+          keys,
+          environment,
+          count: keys.length
+        }
+      });
+    } catch(error) {
+      console.error('❌ Failed to fetch vault keys:', error);
+      throw error;
+    }
   })
 );
 

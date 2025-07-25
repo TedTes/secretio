@@ -301,12 +301,28 @@ async getScanJob(jobId: string, userId?: string): Promise<DbScanJob | null> {
         .single();
   }
   async getUserKeys(userId:string, environment: string = 'production') {
-   return  await supabase
-        .from('vault_keys')
-        .select('id, key_name, service, environment, masked_value, created_at, updated_at, last_accessed')
-        .eq('user_id', userId)
-        .eq('environment', environment)
-        .order('created_at', { ascending: false });
+    try {
+      const {data, error} =   await supabase
+      .from('vault_keys')
+      .select('id, key_name, service, environment, masked_value, created_at, updated_at, last_accessed')
+      .eq('user_id', userId)
+      .eq('environment', environment)
+      .order('created_at', { ascending: false });
+  if (error) {
+    console.error('Database error in getUserKeys:', error);
+    throw new Error(`Database error: ${error.message}`);
+  }
+
+    console.log(`✅ Found ${data?.length || 0} vault keys for user ${userId}`);
+    return { data, error: null };
+    } catch(error) {
+      console.error('getUserKeys failed:', error);
+      return { 
+        data: null, 
+        error: error instanceof Error ? error : new Error('Unknown database error') 
+      };
+    }
+
   }
   async getKeyValue(userId:string, keyName:string , environment:string) {
      //   Get encrypted key from database
