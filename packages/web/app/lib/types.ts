@@ -7,7 +7,13 @@ export interface User {
     updated_at?: string;
     subscription: {status: 'active' | 'inactive'}
   }
-  
+
+
+export interface IVaultKey {
+  keys:[];
+  environment:string;
+  count: number;
+  }
   export interface AuthSession {
     access_token: string;
     refresh_token?: string;

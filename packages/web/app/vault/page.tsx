@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
 import UserMenu from '../components/auth/UserMenu';
+import apiClient from "../lib/api"
 interface VaultKey {
   id: string;
   keyName: string;
@@ -35,22 +36,29 @@ export default function VaultPage() {
     try {
       setLoading(true);
       setError(null);
-
-      const response = await fetch(`/api/vault/keys?environment=${environment}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to load vault keys');
+      const authToken = localStorage.getItem('auth_token') || localStorage.getItem('access_token');
+      if (!authToken) {
+        throw new Error('Authentication token not found. Please log in again.');
       }
-
-      const data = await response.json();
-      setKeys(data.data.keys);
-
+        // Use apiClient instead of direct fetch
+        const response = await apiClient.loadVaultKeys(environment);
+    
+        if (response.success && response.data) {
+          setKeys(response.data.keys); // response.data should be the keys array
+        } else {
+          throw new Error(response.error || 'Failed to load vault keys');
+        }
+    
     } catch (err) {
+      console.error('Vault keys loading error:', err);
       setError(err instanceof Error ? err.message : 'Failed to load vault keys');
+    
+      // If authentication error, redirect to login
+      if (err instanceof Error && err.message.includes('Authentication')) {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('access_token');
+        router.push('/');
+      }
     } finally {
       setLoading(false);
     }

@@ -9,9 +9,9 @@ import {
   GitHubRepo,
   GitHubUser,
   GitHubBranch,
-  GitHubConnectionStatus
+  GitHubConnectionStatus,
+  IVaultKey
 } from "./types"
-
 
 class ApiClient {
     private baseURL: string;
@@ -424,7 +424,16 @@ class ApiClient {
     const response = await this.request<GitHubUser>('/api/github/user');
     return response.success ? response.data || null : null;
   }
-
+ 
+  async loadVaultKeys(env: string): Promise<ApiResponse<IVaultKey>> {
+    const response = await this.request(`/api/vault/keys?environment=${env}`) as ApiResponse<IVaultKey>;
+    
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to load vault keys');
+    }
+    
+    return response;
+  }
   async exchangeCodeForToken(code: string, state: string): Promise<GitHubUser | undefined> {
     const response = await this.request<{ user: GitHubUser }>('/api/github/token/exchange', {
       method: 'POST',
