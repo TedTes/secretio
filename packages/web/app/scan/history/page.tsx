@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../lib/api';
 import { ScanJob } from '../../lib/types';
+import Toast from '../../components/ui/Toast';
+import { useToast } from '../../hooks/useToast'
 import UserMenu from '../../components/auth/UserMenu'; 
 export default function ScanHistoryPage() {
   const router = useRouter();
   const { user, isAuthenticated, isLoading } = useAuth();
-  
+  const { toasts, showSuccess, showError, hideToast } = useToast();
   const [jobs, setJobs] = useState<ScanJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -17,6 +19,7 @@ export default function ScanHistoryPage() {
   const [filterStatus, setFilterStatus] = useState<'all' | 'completed' | 'failed' | 'running'>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [deletingScans, setDeletingScans] = useState(new Set<string>());
 
   useEffect(() => {
     if (!isAuthenticated && !isLoading) {
@@ -140,15 +143,30 @@ export default function ScanHistoryPage() {
     }
 
     try {
-      // TODO: Implement delete scan API call
+       setDeletingScans(prev => new Set(prev).add(jobId));
+     
       console.log('Deleting scan:', jobId);
-      
+      const response = await apiClient.deleteScanResult(jobId);
+   
+  
+      if (!response.success) {
+        const errorData = await response.error;
+        throw new Error(errorData|| 'Failed to delete scan');
+      }
+  
       // Remove from local state for now
       setJobs(prevJobs => prevJobs.filter(job => job.id !== jobId));
-      
+      showSuccess('Scan deleted successfully');
+  
     } catch (err) {
-      console.error('Failed to delete scan:', err);
-      alert('Failed to delete scan. Please try again.');
+      showError(err instanceof Error ? err.message : 'Failed to delete scan. Please try again.');
+     
+    } finally {
+      setDeletingScans(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(jobId);
+        return newSet;
+      });
     }
   };
 
@@ -181,6 +199,18 @@ export default function ScanHistoryPage() {
 
   return (
     <div className="min-h-screen bg-slate-900">
+
+{toasts.map((toast) => (
+        <Toast
+          key={toast.id}
+          message={toast.message}
+          type={toast.type}
+          isVisible={toast.isVisible}
+          onClose={() => hideToast(toast.id)}
+          position="top-right"
+          duration={5000}
+        />
+      ))}
       {/* Navigation */}
       <nav className="bg-slate-900 border-b border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -357,11 +387,12 @@ export default function ScanHistoryPage() {
                           View Results
                         </button>
                         <button
-                          onClick={() => handleDeleteScan(job.id)}
-                          className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-white text-xs transition-colors"
-                        >
-                          Delete
-                        </button>
+  onClick={() => handleDeleteScan(job.id)}
+  disabled={deletingScans.has(job.id)}
+  className="bg-red-600 hover:bg-red-700 disabled:opacity-50 px-3 py-1 rounded text-white text-xs transition-colors"
+>
+  {deletingScans.has(job.id) ? '...' : 'Delete'}
+</button>
                       </div>
                     </div>
                   </div>

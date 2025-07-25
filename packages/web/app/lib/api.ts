@@ -122,6 +122,16 @@ class ApiClient {
       }
     }
   
+    async deleteScanResult(jobId:string):Promise<ApiResponse>{
+      const response = await this.request<{jobId:string}>(`/api/scan/jobs/${jobId}`,{
+        method:'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      return response;
+    }
     // Authentication endpoints
     async login(credentials: LoginRequest): Promise<AuthResponse> {
       const response = await this.request<AuthResponse>('/api/auth/login', {
