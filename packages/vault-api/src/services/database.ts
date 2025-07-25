@@ -381,6 +381,110 @@ async getScanJob(jobId: string, userId?: string): Promise<DbScanJob | null> {
       throw new Error(`Database error: ${error.message}`);
     }
   }
+    /**
+ * Delete scan results for a job
+ */
+async deleteScanResults(jobId: string): Promise<void> {
+  try {
+    const { error } = await this.supabaseClient
+      .from('scan_results')
+      .delete()
+      .eq('job_id', jobId);
+
+    if (error) {
+      throw new Error(`Failed to delete scan results: ${error.message}`);
+    }
+
+    console.log(`🗑️ Deleted scan results for job ${jobId}`);
+
+  } catch (error) {
+    console.error('deleteScanResults failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Delete scan stats for a job
+ */
+async deleteScanStats(jobId: string): Promise<void> {
+  try {
+    const { error } = await this.supabaseClient
+      .from('scan_stats')
+      .delete()
+      .eq('job_id', jobId);
+
+    if (error) {
+      throw new Error(`Failed to delete scan stats: ${error.message}`);
+    }
+
+    console.log(`🗑️ Deleted scan stats for job ${jobId}`);
+
+  } catch (error) {
+    console.error('deleteScanStats failed:', error);
+    throw error;
+  }
+}
+/** 
+* Delete a scan job
+*/
+async deleteScanJob(jobId: string): Promise<void> {
+ try {
+   const { error } = await this.supabaseClient
+     .from('scan_jobs')
+     .delete()
+     .eq('id', jobId);
+
+   if (error) {
+     throw new Error(`Failed to delete scan job: ${error.message}`);
+   }
+
+   console.log(`🗑️ Deleted scan job ${jobId}`);
+
+ } catch (error) {
+   console.error('deleteScanJob failed:', error);
+   throw error;
+ }
+}
+/**
+ * Delete multiple scan jobs (bulk delete)
+ */
+async deleteScanJobs(userId: string, jobIds: string[]): Promise<void> {
+  try {
+    // Verify all jobs belong to the user
+    const { data: jobs, error: selectError } = await this.supabaseClient
+      .from('scan_jobs')
+      .select('id, user_id, status')
+      .eq('user_id', userId)
+      .in('id', jobIds);
+
+    if (selectError) {
+      throw new Error(`Failed to verify jobs: ${selectError.message}`);
+    }
+
+    if (!jobs || jobs.length !== jobIds.length) {
+      throw new Error('Some jobs not found or access denied');
+    }
+
+    // Check if any jobs are running
+    const runningJobs = jobs.filter(job => job.status === 'running' || job.status === 'pending');
+    if (runningJobs.length > 0) {
+      throw new Error(`Cannot delete running jobs: ${runningJobs.map(j => j.id).join(', ')}`);
+    }
+
+    // Delete in batches to avoid timeout
+    for (const jobId of jobIds) {
+      await this.deleteScanResults(jobId);
+      await this.deleteScanStats(jobId);
+      await this.deleteScanJob(jobId);
+    }
+
+    console.log(`🗑️ Bulk deleted ${jobIds.length} scan jobs for user ${userId}`);
+
+  } catch (error) {
+    console.error('deleteScanJobs failed:', error);
+    throw error;
+  }
+}
   // Health check
   async healthCheck(): Promise<boolean> {
     try {

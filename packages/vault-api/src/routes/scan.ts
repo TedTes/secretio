@@ -201,5 +201,65 @@ scanRoutes.get('/test',
       res.json(response);
     })
   );
-
+scanRoutes.delete('/jobs/:jobId',
+    requireAuth,
+    injectUserContext,
+    asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+      const dbServiceInstance = req.dbServiceInstance;
+      const userId = getUserId(req);
+      const { jobId } = req.params;
+      
+      if (!userId) {
+        throw createError('User ID required', 401);
+      }
+  
+      if (!jobId) {
+        throw createError('Job ID required', 400);
+      }
+  
+      console.log(`🗑️ Delete scan request for job ${jobId} by user ${userId}`);
+  
+      try {
+        // First, verify the job belongs to the user
+        const job = await dbServiceInstance.getScanJob(jobId);
+        
+        if (!job) {
+          throw createError('Scan job not found', 404);
+        }
+  
+        if (job.user_id !== userId) {
+          throw createError('Access denied - not your scan job', 403);
+        }
+  
+        // Prevent deletion of running jobs
+        if (job.status === 'running' || job.status === 'pending') {
+          throw createError('Cannot delete running or pending scan jobs', 400);
+        }
+  
+        // Delete all related data in correct order (due to foreign key constraints)
+        
+        // 1. Delete scan results first
+        await dbServiceInstance.deleteScanResults(jobId);
+        
+        // 2. Delete scan stats
+        await dbServiceInstance.deleteScanStats(jobId);
+        
+        // 3. Finally delete the job itself
+        await dbServiceInstance.deleteScanJob(jobId);
+  
+        console.log(`✅ Scan job ${jobId} deleted successfully by user ${userId}`);
+  
+        const response: ApiResponse = {
+          success: true,
+          message: 'Scan job deleted successfully'
+        };
+  
+        res.json(response);
+  
+      } catch (error) {
+        console.error(`❌ Failed to delete scan job ${jobId}:`, error);
+        throw error;
+      }
+    })
+  );
 export default scanRoutes;
