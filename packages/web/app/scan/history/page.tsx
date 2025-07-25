@@ -102,24 +102,28 @@ export default function ScanHistoryPage() {
       switch (sortBy) {
         case 'date':
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        case 'status':
-          return a.status.localeCompare(b.status);
-        case 'repository':
-          return a.repository.localeCompare(b.repository);
+          case 'status':
+            const statusA = a.status || '';
+            const statusB = b.status || '';
+            return statusA.localeCompare(statusB);
+          case 'repository':
+            const repoA = a.request.repo || '';
+            const repoB = b.request.repo || '';
+            return repoA.localeCompare(repoB);
         default:
           return 0;
       }
-    });
+    }); 
 
     return filtered;
   };
 
-  const paginatedJobs = () => {
-    const filtered = filteredAndSortedJobs();
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return filtered.slice(startIndex, endIndex);
-  };
+const paginatedJobs = () => {
+  const filtered = filteredAndSortedJobs();
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  return filtered.slice(startIndex, endIndex);
+};
 
   const totalPages = Math.ceil(filteredAndSortedJobs().length / itemsPerPage);
 
@@ -351,7 +355,7 @@ export default function ScanHistoryPage() {
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
                       {/* Repository */}
                       <div>
-                        <h3 className="font-medium text-white">{job.repository}</h3>
+                        <h3 className="font-medium text-white">{job?.request?.repo}</h3>
                         <p className="text-sm text-gray-400">ID: {job.id.slice(0, 8)}...</p>
                       </div>
 
@@ -375,7 +379,7 @@ export default function ScanHistoryPage() {
 
                       {/* Branch */}
                       <div>
-                        <span className="text-sm text-gray-300">{job.branch}</span>
+                        <span className="text-sm text-gray-300">{job.request.branch || 'main'}</span>
                       </div>
 
                       {/* Actions */}

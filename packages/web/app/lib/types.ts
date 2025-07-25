@@ -46,8 +46,6 @@ export interface User {
   export interface ScanJob {
     id: string;
     status: 'pending' | 'running' | 'completed' | 'failed';
-    repository: string;
-    branch: string;
     createdAt: string;
     startedAt?: string;
     completedAt?: string;
@@ -56,6 +54,12 @@ export interface User {
       total: number;
       currentFile?: string;
     };
+    request:{
+      owner?:string;
+      repo?:string;
+      branch?:string;
+      github_token?:string;
+    }
     error?: string;
   }
   
