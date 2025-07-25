@@ -72,7 +72,7 @@ export default function NewScanPage() {
       }
       
       setGithubUser(userData);
-      await loadUserRepos();
+      await loadUserRepos(1,repoTypeFilter);
       
     } catch (err) {
       console.error('Failed to initialize GitHub data:', err);
@@ -82,36 +82,34 @@ export default function NewScanPage() {
     }
   };
 
-  const loadUserRepos = async (page = 1, append = false) => {
+  const loadUserRepos = async (page = 1, type: 'all' | 'public' | 'private') => {
     try {
-      if (!append) {
-        setLoading(true);
-        if (page === 1) setRepos([]);
-      }
+      setLoading(true);
       setError(null);
       
-      const repoData = await apiClient.getRepositories(page, repoTypeFilter);
+      const fetchedRepos = await apiClient.getRepositories(page, type);
       
-      // Filter by search term if provided
-      const filteredRepos = apiClient.searchRepositories(repoData, searchTerm);
-
-      if (append) {
-        setRepos(prev => [...prev, ...filteredRepos]);
+     
+      if (page === 1) {
+        setRepos(fetchedRepos);
       } else {
-        setRepos(filteredRepos);
+        setRepos(prevRepos => [...prevRepos, ...fetchedRepos]);
       }
-      
-      setHasMoreRepos(repoData.length === 30);
+      setHasMoreRepos(fetchedRepos.length === 30);
       setRepoPage(page);
       
     } catch (err) {
+      console.error('Failed to load repositories:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to load repositories';
       setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
-
+  const loadMoreRepos = async () => {
+    if (loading || !hasMoreRepos) return;
+    await loadUserRepos(repoPage + 1, repoTypeFilter);
+  };
   const loadRepoBranches = async (repo: GitHubRepo) => {
     try {
       setLoadingBranches(true);
@@ -168,14 +166,16 @@ export default function NewScanPage() {
     setSearchTerm(term);
     if (hasGitHubAccess) {
       // Debounce search
-      setTimeout(() => loadUserRepos(1), 300);
+      setTimeout(() => loadUserRepos(1,repoTypeFilter), 300);
     }
   };
 
   const handleFilterChange = (filter: 'all' | 'public' | 'private') => {
     setRepoTypeFilter(filter);
+    setRepoPage(1);
+    setHasMoreRepos(true);
     if (hasGitHubAccess) {
-      loadUserRepos(1);
+       loadUserRepos(1,filter);
     }
   };
 
@@ -393,9 +393,9 @@ export default function NewScanPage() {
                     onChange={(e) => handleFilterChange(e.target.value as 'all' | 'public' | 'private')}
                     className="px-3 py-2 bg-slate-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="all">All Repos</option>
-                    <option value="public">Public</option>
-                    <option value="private">Private</option>
+                    <option value="all">All Repositories</option>
+                    <option value="public">Public Only</option>
+                    <option value="private">Private Only</option>
                   </select>
                 </div>
               </div>
@@ -473,12 +473,15 @@ export default function NewScanPage() {
                     {hasMoreRepos && (
                       <div className="text-center pt-4">
                         <button
-                          onClick={() => loadUserRepos(repoPage + 1, true)}
+                          onClick={loadMoreRepos}
                           disabled={loading}
                           className="bg-slate-700 hover:bg-slate-600 disabled:opacity-50 px-4 py-2 rounded-lg text-white transition-colors"
                         >
                           {loading ? 'Loading...' : 'Load More'}
                         </button>
+                        <p className="text-sm text-gray-400 mt-2">
+      Showing {repos.length} {repoTypeFilter === 'all' ? '' : repoTypeFilter} repositories
+    </p>
                       </div>
                     )}
                   </div>

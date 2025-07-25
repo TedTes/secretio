@@ -1,7 +1,7 @@
 import { Router,Response } from 'express';
 import { asyncHandler } from '../middleware/errorHandler';
 import { requireAuth } from '../middleware/auth';
-import { validateBody } from '../middleware/validation';
+import { validateBody,injectUserContext} from '../middleware';
 import { githubExchangeSchema, githubDisconnectSchema } from '../validation/schemas';
 import { GitHubService } from '../services/github';
 import {AuthenticatedRequest, ValidatedRequest} from "../types"
@@ -128,6 +128,7 @@ router.get('/connection/status',
 // Get user repositories with smart filtering
 router.get('/repositories',
   requireAuth, 
+  injectUserContext,
   asyncHandler(async (req:AuthenticatedRequest , res:Response) => {
     const userId = req.user.id;
 
