@@ -67,8 +67,11 @@ export interface IVaultKey {
       github_token?:string;
     }
     error?: string;
+    repository?: string;
+    keysFound: number;
+    filesScanned?: number;
+    duration?: number;
   }
-  
   export interface ScanResult {
     id?: string;                              // Database ID (optional for new results)
     service: string;                          // Service name (e.g., 'aws', 'stripe', 'openai')

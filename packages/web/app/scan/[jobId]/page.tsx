@@ -386,9 +386,9 @@ export default function ScanResultsPage() {
         <div className="bg-slate-800 rounded-lg border border-gray-700 p-6 mb-8">
           <div className="flex justify-between items-start">
             <div>
-              <h1 className="text-2xl font-bold text-white mb-2">{job.repository}</h1>
+              <h1 className="text-2xl font-bold text-white mb-2">{job.request?.repo}</h1>
               <div className="flex items-center space-x-4 text-sm text-gray-300">
-                <span>Branch: {job.branch}</span>
+                <span>Branch: {job.request?.branch}</span>
                 <span>•</span>
                 <span>Scanned: {new Date(job.createdAt).toLocaleDateString()}</span>
                 <span>•</span>

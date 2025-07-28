@@ -22,11 +22,11 @@ export interface ScanResult {
   
 // Real-time stats interface matching database
 export interface ScanStats {
-  files_scanned: number;           // Updated field name
-  keys_found: number;              // Updated field name  
-  high_severity: number;           // Updated field name
-  medium_severity: number;         // Updated field name
-  low_severity: number;            // Updated field name
+  files_scanned: number;           
+  keys_found: number;              
+  high_severity: number;           
+  medium_severity: number; 
+  low_severity: number; 
   total_files?: number;            // Added for progress tracking
   duration_ms?: number;            // Added for performance metrics
 }
