@@ -61,14 +61,58 @@ export default function Dashboard() {
     return statusColors[status as keyof typeof statusColors] || statusColors.default;
   };
 
-
+  const getServiceIcon = (service: string) => {
+    const icons = {
+      stripe_secret: '💳',
+      stripe_publishable: '💳',
+      aws_access_key: '☁️',
+      aws_secret_key: '☁️',
+      openai: '🤖',
+      github_token: '🐙',
+      github_oauth: '🐙',
+      sendgrid: '📧',
+      google_api: '🔍',
+      slack_token: '💬',
+      discord_webhook: '🎮',
+      firebase: '🔥',
+      mailgun: '📬',
+      twilio_sid: '📱',
+      twilio_auth: '📱'
+    };
+    
+    return icons[service as keyof typeof icons] || '🔑';
+  };
+  const getServiceName = (service: string) => {
+    const names = {
+      stripe_secret: 'Stripe',
+      stripe_publishable: 'Stripe',
+      aws_access_key: 'AWS',
+      aws_secret_key: 'AWS',
+      openai: 'OpenAI',
+      github_token: 'GitHub',
+      github_oauth: 'GitHub',
+      sendgrid: 'SendGrid',
+      google_api: 'Google',
+      slack_token: 'Slack',
+      discord_webhook: 'Discord',
+      firebase: 'Firebase',
+      mailgun: 'Mailgun',
+      twilio_sid: 'Twilio',
+      twilio_auth: 'Twilio'
+    };
+    
+    return names[service as keyof typeof names] || 'API Key';
+  };
+  
   useEffect(() => {
     if (isAuthenticated) {
       refetchJobs();
     }
   }, [isAuthenticated]); // Remove refetchJobs from dependencies
 
-
+  const getUniqueServices = (results: any[]): string[] => {
+    return Array.from(new Set(results.map((r: any) => r.service)));
+  };
   const hasJobs = jobs && jobs.length > 0;
   const lastScanDate = hasJobs ? new Date(jobs[0].createdAt).toLocaleDateString() : 'Never';
   const recentJobs = hasJobs ? jobs.slice(0, 5) : [];
@@ -303,94 +347,164 @@ export default function Dashboard() {
               </div>
             ) : !hasJobs ? (
               <div className="text-center py-12">
-                <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-medium text-white mb-2">Ready to Start Scanning?</h3>
-                <p className="text-gray-300 mb-6">Discover exposed API keys in your repositories</p>
-                <button
-                  onClick={() => router.push('/scan/new')}
-                  className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg text-white font-semibold transition-colors"
-                >
-                  Scan Your First Repository
-                </button>
+              <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
               </div>
+              <h3 className="text-lg font-medium text-white mb-2">Ready to Start Scanning?</h3>
+              <p className="text-gray-300 mb-4">Discover exposed API keys in your repositories</p>
+              
+              {/* NEW: Service examples */}
+              <div className="flex items-center justify-center space-x-2 mb-6">
+                <span className="text-sm text-gray-400">Detects:</span>
+                <div className="flex items-center space-x-1">
+                  {['💳 Stripe', '☁️ AWS', '🤖 OpenAI', '🐙 GitHub'].map((service, index) => (
+                    <span key={index} className="text-xs bg-slate-700 px-2 py-1 rounded text-gray-300">
+                      {service}
+                    </span>
+                  ))}
+                  <span className="text-xs text-gray-400">+15 more</span>
+                </div>
+              </div>
+              
+              <button
+                onClick={() => router.push('/scan/new')}
+                className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg text-white font-semibold transition-colors"
+              >
+                Scan Your First Repository
+              </button>
+            </div>
             ) : (
               <div className="space-y-3">
-                {recentJobs.map((job: any) => (
-                  <div key={job.id} className="flex items-center justify-between p-4 bg-slate-700 rounded-lg hover:bg-slate-650 transition-colors">
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-3 h-3 rounded-full ${getStatusDotColor(job.status, job.keysFound)}`}></div>
-                      
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3">
-                          <h3 className="font-medium text-white">{job.request.repo}</h3>
-                          
-                          {job.status === 'completed' && (
-                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${
-                              getRiskBadgeStyles(getRiskLevel(job.keysFound || 0))
-                            }`}>
-                              {job.keysFound > 0 ? (
-                                <>
-                                  <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                  </svg>
-                                  {job.keysFound} key{job.keysFound !== 1 ? 's' : ''}
-                                </>
-                              ) : (
-                                <>
-                                  <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                  </svg>
-                                  Clean
-                                </>
-                              )}
-                            </span>
-                          )}
-                        </div>
-                        
-                        <div className="flex items-center space-x-4 text-sm text-gray-300 mt-1">
-                          <span>{new Date(job.createdAt).toLocaleDateString()}</span>
-                          <span>•</span>
-                          <span className="capitalize">{job.status}</span>
-                          {job.status === 'completed' && job.filesScanned && (
-                            <>
-                              <span>•</span>
-                              <span>{job.filesScanned.toLocaleString()} files</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      {job.status === 'completed' && job.keysFound > 0 && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/scan/${job.id}#secure`);
-                          }}
-                          className="text-xs bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-white transition-colors"
-                          title="Secure found keys in vault"
-                        >
-                          Secure Keys
-                        </button>
-                      )}
-                      
-                      <button
-                        onClick={() => router.push(`/scan/${job.id}`)}
-                        className="text-blue-400 hover:text-blue-300 text-sm transition-colors flex items-center space-x-1"
-                      >
-                        <span>View</span>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </button>
-                    </div>
+              {recentJobs.map((job: any) => (
+  <div key={job.id} className="flex items-center justify-between p-4 bg-slate-700 rounded-lg hover:bg-slate-650 transition-colors">
+    <div className="flex items-center space-x-3">
+      <div className={`w-3 h-3 rounded-full ${getStatusDotColor(job.status, job.keysFound)}`}></div>
+      
+      <div className="flex-1">
+        <div className="flex items-center space-x-3">
+          <h3 className="font-medium text-white">{job.request.repo}</h3>
+          
+          {job.status === 'completed' && (
+            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${
+              getRiskBadgeStyles(getRiskLevel(job.keysFound || 0))
+            }`}>
+              {job.keysFound > 0 ? (
+                <>
+                  <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  {job.keysFound} key{job.keysFound !== 1 ? 's' : ''}
+                </>
+              ) : (
+                <>
+                  <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  Clean
+                </>
+              )}
+            </span>
+          )}
+        </div>
+        
+        <div className="flex items-center space-x-4 text-sm text-gray-300 mt-1">
+          <span>{new Date(job.createdAt).toLocaleDateString()}</span>
+          <span>•</span>
+          <span className="capitalize">{job.status}</span>
+          
+          {/* NEW: Service types preview */}
+          {job.status === 'completed' && job.results && job.results.length > 0 && (
+            <>
+              <span>•</span>
+              <div className="flex items-center space-x-1">
+                {/* Show unique services found with icons */}
+                {getUniqueServices(job.results).slice(0, 3).map((service: string, index: number) => (
+                  <div 
+                    key={service}
+                    className="flex items-center space-x-1 bg-slate-600 px-2 py-1 rounded text-xs"
+                    title={`${getServiceName(service)} credentials found`}
+                  >
+                    <span>{getServiceIcon(service)}</span>
+                    <span>{getServiceName(service)}</span>
                   </div>
                 ))}
+                
+                {/* Show "+X more" if there are more than 3 services */}
+                {job.results && getUniqueServices(job.results).length > 3 && (
+                  <span className="text-xs text-gray-400 bg-slate-600 px-2 py-1 rounded">
+                    +{[...new Set(job.results.map((r: any) => r.service))].length - 3} more
+                  </span>
+                )}
+              </div>
+            </>
+          )}
+          
+          {/* Enhanced scan details */}
+          {job.status === 'completed' && job.filesScanned && (
+            <>
+              <span>•</span>
+              <span>{job.filesScanned.toLocaleString()} files</span>
+            </>
+          )}
+          
+          {/* NEW: Show scan duration if available */}
+          {job.status === 'completed' && job.duration && (
+            <>
+              <span>•</span>
+              <span>{job.duration}s scan</span>
+            </>
+          )}
+          
+          {/* NEW: Show top vulnerable file preview */}
+          {job.status === 'completed' && job.results && job.results.length > 0 && (
+            <>
+              <span>•</span>
+              <span className="text-gray-400 italic">
+                Found in: {job.results[0].file_path.split('/').pop()}
+                {job.results.length > 1 && ` +${job.results.length - 1} file${job.results.length > 2 ? 's' : ''}`}
+              </span>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+    
+    <div className="flex items-center space-x-2">
+      {/* Enhanced quick action with service context */}
+      {job.status === 'completed' && job.keysFound > 0 && (
+        <div className="flex items-center space-x-1">
+          {/* NEW: Show service icons in button tooltip */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/scan/${job.id}#secure`);
+            }}
+            className="text-xs bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-white transition-colors flex items-center space-x-1"
+            title={`Secure ${job.keysFound} ${job.results ? 
+              [...new Set(job.results.map((r: any) => getServiceName(r.service)))].join(', ') : ''} credentials`}
+          >
+            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 616 0z" clipRule="evenodd" />
+            </svg>
+            <span>Secure</span>
+          </button>
+        </div>
+      )}
+      
+      <button
+        onClick={() => router.push(`/scan/${job.id}`)}
+        className="text-blue-400 hover:text-blue-300 text-sm transition-colors flex items-center space-x-1"
+      >
+        <span>View</span>
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+    </div>
+  </div>
+))}
               </div>
             )}
           </div>
