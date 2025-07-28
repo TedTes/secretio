@@ -230,7 +230,7 @@ const paginatedJobs = () => {
               <h1 className="text-lg font-semibold text-white">Scan History</h1>
             </div>
             
-            {/* REPLACE basic text with UserMenu */}
+        
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => router.push('/scan/new')}
@@ -238,7 +238,6 @@ const paginatedJobs = () => {
               >
                 New Scan
               </button>
-              {/* Replace this: <span className="text-gray-300">Welcome, {user?.email}</span> */}
               <UserMenu />
             </div>
           </div>
@@ -246,11 +245,7 @@ const paginatedJobs = () => {
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Scan History</h1>
-          <p className="text-gray-300">View and manage all your repository security scans</p>
-        </div>
+
 
         {/* Filters and Search */}
         <div className="bg-slate-800 rounded-lg border border-gray-700 p-6 mb-8">
