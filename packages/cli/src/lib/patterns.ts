@@ -22,7 +22,7 @@ export const API_KEY_PATTERNS: Record<string, ApiKeyPattern> = {
     description: 'AWS Access Key ID'
   },
   aws_secret_key: {
-    regex: /[A-Za-z0-9/+=]{40}/g,
+    regex: /(?:AWS_SECRET_ACCESS_KEY|aws_secret_access_key|secretAccessKey)[\s]*[=:>][\s]*['\"]?([A-Za-z0-9/+=]{40})['\"]?/gi,
     severity: 'high',
     description: 'AWS Secret Access Key'
   },
@@ -42,7 +42,7 @@ export const API_KEY_PATTERNS: Record<string, ApiKeyPattern> = {
     description: 'GitHub OAuth Access Token'
   },
   sendgrid: {
-    regex: /SG\.[a-zA-Z0-9_-]{22}\.[a-zA-Z0-9_-]{43}/g,
+    regex: /SG\.[a-zA-Z0-9_-]{20,25}\.[a-zA-Z0-9_-]{40,50}/g,
     severity: 'high',
     description: 'SendGrid API Key'
   },
@@ -115,6 +115,9 @@ export const FILE_PATTERNS = {
     '**/.nyc_output/**',
     '**/vendor/**',
     '**/*.min.js',
-    '**/*.bundle.js'
+    '**/*.bundle.js', 
+    '**/package-lock.json', 
+    '**/yarn.lock', 
+    '**/pnpm-lock.yaml'
   ]
 };
