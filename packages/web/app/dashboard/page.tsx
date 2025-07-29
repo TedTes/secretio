@@ -156,14 +156,14 @@ export default function Dashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo section */}
-            <div className="flex items-center space-x-2">
+            <button onClick={() => router.push(isAuthenticated ? '/dashboard' : '/')} className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-blue-500 rounded-lg flex items-center justify-center">
                 <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 616 0z" clipRule="evenodd" />
                 </svg>
               </div>
               <span className="text-xl font-bold text-white">secretio</span>
-            </div>
+            </button>
             
             {/* Navigation links */}
             <div className="flex items-center space-x-6">

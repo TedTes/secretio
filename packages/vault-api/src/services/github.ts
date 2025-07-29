@@ -1,7 +1,6 @@
 import fetch from 'node-fetch';
 import { GitHubTree, GitHubRepository, GitHubFile } from '../types/github';
 import { supabase } from '../config/database';
-import { SupabaseClient } from '@supabase/supabase-js';
 import { DatabaseService } from './database';
 export class GitHubService {
   private baseUrl = 'https://api.github.com';

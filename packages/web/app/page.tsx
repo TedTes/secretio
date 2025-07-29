@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState,useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from './contexts/AuthContext';
 import LoginModal from './components/auth/LoginModal';
 import RegisterModal from './components/auth/RegisterModal';
@@ -9,7 +10,21 @@ export default function Home() {
   const [scanStatus, setScanStatus] = useState('')
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
-  const { isAuthenticated} = useAuth();
+  const { isAuthenticated, isLoading} = useAuth();
+  const router = useRouter();
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace('/dashboard');
+    }
+  }, [isAuthenticated, isLoading, router]);
+  if (isLoading) {
+    return <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+    </div>;
+  }
+  if (isAuthenticated) {
+    return null; // Will redirect
+  }
   const handleScanClick = () => {
     if (!isAuthenticated) {
       setShowLoginModal(true);
@@ -27,14 +42,14 @@ export default function Home() {
       <nav className="fixed top-0 w-full bg-slate-900/90 backdrop-blur-md border-b border-gray-800 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
+            <button onClick={() => router.push(isAuthenticated ? '/dashboard' : '/')} className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-blue-500 rounded-lg flex items-center justify-center">
                 <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd"></path>
                 </svg>
               </div>
               <span className="text-xl font-bold">secretio</span>
-            </div>
+            </button>
             <div className="hidden md:flex items-center space-x-8">
               <a href="#features" className="text-gray-300 hover:text-white transition-colors">Features</a>
               <a href="#pricing" className="text-gray-300 hover:text-white transition-colors">Pricing</a>
