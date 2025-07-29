@@ -449,6 +449,20 @@ class ApiClient {
   
     return response.user;
   }
+  async storeVaultKey(request: {
+    keyName: string;
+    service: string;
+    value: string;
+    environment: string;
+  }): Promise<any> {
+    const response =  await this.request('/api/vault/store',
+      {
+        method: 'POST',
+        body: JSON.stringify(request)
+      }
+    );
+    return response;
+  }
   }
   
   // Export singleton instance
