@@ -6,7 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../lib/api';
 import { ScanJob, ScanResult } from '../../lib/types';
 import UserMenu from '../../components/auth/UserMenu';
-
+import VaultMigrationSnippet from '../../components/VaultMigrationSnippet';
 export interface ScanStats {
   files_scanned: number;           
   keys_found: number;              
@@ -147,75 +147,31 @@ export default function ScanResultsPage() {
     };
   }, [pollingInterval]);
 
-  const handleStoreInVault = async (result: ScanResult, index: number) => {
+  const handleStoreInVault = async (result: ScanResult, keyName: string, service: string,index:number) => {
     try {
-      setStoringKeys(prev => new Set([...prev, index]));
-      
-      // Generate a user-friendly key name
-      const keyName = `${result.service}_${Date.now()}`;
+      const finalRes = 
+      setStoringKeys(prev => new Set(prev).add(index));
       
       // Call vault API to store the key
-      const response = await fetch('/api/vault/keys', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          keyName,
-          service: result.service,
-          value: result.match, // The actual API key value
-          environment: 'production'
-        })
+      await apiClient.storeVaultKey({
+        keyName,
+        service,
+        value: result.match,
+        environment: 'production'
       });
-  
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        
-        if (response.status === 401) {
-          throw new Error('Authentication expired. Please log in again.');
-        } else if (response.status === 403) {
-          throw new Error('Access denied. Upgrade to vault plan required.');
-        } else if (response.status === 400) {
-          throw new Error(errorData.error || 'Invalid request. Check key format.');
-        } else {
-          throw new Error(errorData.error || `Server error (${response.status})`);
-        }
-      }
-  
-      const data = await response.json();
-      console.log('✅ Key stored successfully:', data);
       
-      setStoredKeys(prev => new Set([...prev, keyName]));
-      setLastStoredKey({ keyName, service: result.service });
-      // Remove the result from the list (optimistic update)
-      if (resultsData) {
-        const newResults = resultsData.results.filter((_, i) => i !== index);
-        setResultsData({
-          ...resultsData,
-          results: newResults,
-          stats: {
-            ...resultsData.stats,
-            keys_found: newResults.length
-          }
-        });
-      }
-
-   // Show success modal
-   setShowSuccessModal(true);
+      setStoredKeys(prev => new Set(prev).add(keyName));
+      setLastStoredKey({ keyName, service });
+      setShowSuccessModal(true);
       
     } catch (error) {
-      console.error('❌ Failed to store key in vault:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      alert(`❌ Failed to store key: ${errorMessage}`);
-      if (errorMessage.includes('Authentication') || errorMessage.includes('expired')) {
-        console.warn('Authentication issue - user may need to re-login');
-      }
+      console.error('Failed to store key:', error);
+      alert('Failed to store key in vault');
     } finally {
       setStoringKeys(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(index);
-        return newSet;
+        const next = new Set(prev);
+        next.delete(index);
+        return next;
       });
     }
   };
@@ -595,7 +551,58 @@ export default function ScanResultsPage() {
     </div>
   </div>
 </div>
-        
+        {/* Scan Results Section */}
+{resultsData && resultsData.results.length > 0 && (
+  <div className="space-y-6">
+    <div className="flex justify-between items-center">
+      <h2 className="text-xl font-bold text-white">Exposed API Keys</h2>
+      <div className="text-sm text-gray-400">
+        {resultsData.results.length} keys found
+      </div>
+    </div>
+
+    <div className="space-y-4">
+      {resultsData.results.map((result, index) => (
+        <div key={index} className="bg-slate-800 rounded-lg border border-gray-700 p-6">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center space-x-3 mb-3">
+                <span className={`px-2 py-1 rounded text-xs font-medium border ${getSeverityColor(result.severity)}`}>
+                  {result.severity.toUpperCase()}
+                </span>
+                <span className="text-blue-400 font-medium">{result.service}</span>
+              </div>
+              
+              <div className="text-sm text-gray-300 mb-3">
+                <span className="font-mono">{result.file_path}</span>
+                <span className="text-gray-400 ml-2">line {result.line_number}</span>
+              </div>
+              
+              <p className="text-gray-400 text-sm mb-3">{result.description}</p>
+              
+              <div className="bg-slate-900 rounded p-3 font-mono text-xs text-red-400 mb-3">
+                {result.masked_value || result.match.slice(0, 8) + '***HIDDEN***'}
+              </div>
+
+              {/* Add vault migration snippet */}
+              <VaultMigrationSnippet 
+                result={result} 
+                onStore={(keyName, service) => handleStoreInVault(result, keyName, service,index)}
+              />
+            </div>
+            
+            <button
+              onClick={() => handleIgnoreResult(result, index)}
+              className="text-gray-400 hover:text-gray-300 text-sm ml-4 px-3 py-1 rounded border border-gray-600 hover:border-gray-500 transition-colors"
+            >
+              Ignore
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
       </div>
       {resultsData && resultsData?.stats?.keys_found > 0 && (
   <div className="bg-gradient-to-r from-red-600/20 to-orange-600/20 border border-red-500/30 rounded-lg p-6 mb-8">
