@@ -4,35 +4,42 @@
     "description": "Secure API key scanner and vault CLI",
     "main": "dist/index.js",
     "bin": {
-      "secretio": "./bin/secretio"
+        "secretio": "./bin/secretio"
     },
     "scripts": {
-      "build": "tsc",
-      "dev": "tsx src/index.ts",
-      "test": "tsx src/test.ts",
-      "prepublishOnly": "npm run build"
+        "build": "tsc",
+        "prebuild": "cp -r ../vault-client/src ./src/vault-client",
+        "dev": "tsx src/index.ts",
+        "test": "tsx src/test.ts",
+        "prepublishOnly": "npm run build"
     },
-    "keywords": ["api-keys", "security", "scanner", "vault", "cli"],
+    "keywords": [
+        "api-keys",
+        "security",
+        "scanner",
+        "vault",
+        "cli"
+    ],
     "author": "Secretio Team",
     "license": "MIT",
     "files": [
-      "dist/**/*",
-      "bin/secretio"
+        "dist/**/*",
+        "bin/secretio"
     ],
     "dependencies": {
-      "commander": "^11.0.0",
-      "chalk": "^4.1.2",
-      "ora": "^5.4.1",
-      "glob": "^10.3.0",
-      "inquirer": "^8.2.6"
+        "chalk": "^4.1.2",
+        "commander": "^11.0.0",
+        "glob": "^10.3.0",
+        "inquirer": "^8.2.6",
+        "ora": "^5.4.1"
     },
     "devDependencies": {
-      "typescript": "^5.0.0",
-      "tsx": "^4.0.0",
-      "@types/node": "^20.0.0",
-      "@types/inquirer": "^9.0.0"
+        "@types/inquirer": "^9.0.0",
+        "@types/node": "^20.19.9",
+        "tsx": "^4.0.0",
+        "typescript": "^5.0.0"
     },
     "engines": {
-      "node": ">=16.0.0"
+        "node": ">=16.0.0"
     }
-  }
+}
