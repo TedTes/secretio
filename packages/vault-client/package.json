@@ -5,37 +5,43 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
-      "build": "tsc",
-      "dev": "tsc --watch",
-      "test": "tsx src/test.ts",
-      "prepublishOnly": "npm run build"
+        "build": "tsc",
+        "dev": "tsc --watch",
+        "test": "tsx src/test.ts",
+        "prepublishOnly": "npm run build"
     },
-    "keywords": ["secretio", "vault", "api-keys", "sdk", "client"],
+    "keywords": [
+        "secretio",
+        "vault",
+        "api-keys",
+        "sdk",
+        "client"
+    ],
     "author": "Secretio Team",
     "license": "MIT",
     "files": [
-      "dist/**/*",
-      "README.md"
+        "dist/**/*",
+        "README.md"
     ],
     "dependencies": {
-      "node-fetch": "^2.7.0"
+        "node-fetch": "^2.7.0"
     },
     "devDependencies": {
-      "@types/node": "^20.0.0",
-      "@types/node-fetch": "^2.6.0",
-      "typescript": "^5.0.0",
-      "tsx": "^4.0.0"
+        "@types/node": "^20.19.9",
+        "@types/node-fetch": "^2.6.0",
+        "tsx": "^4.0.0",
+        "typescript": "^5.0.0"
     },
     "engines": {
-      "node": ">=18.0.0"
+        "node": ">=18.0.0"
     },
     "repository": {
-      "type": "git",
-      "url": "https://github.com/secretio/secretio.git",
-      "directory": "packages/vault-client"
+        "type": "git",
+        "url": "https://github.com/secretio/secretio.git",
+        "directory": "packages/vault-client"
     },
     "bugs": {
-      "url": "https://github.com/secretio/secretio/issues"
+        "url": "https://github.com/secretio/secretio/issues"
     },
     "homepage": "https://secretio.com"
-  }
+}
