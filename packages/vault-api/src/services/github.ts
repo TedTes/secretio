@@ -65,6 +65,7 @@ export class GitHubService {
   }
 
   private async makeRequest(endpoint: string): Promise<any> {
+    await new Promise(resolve => setTimeout(resolve, 100));
     const url = `${this.baseUrl}${endpoint}`;
     const headers: Record<string, string> = {
       'Accept': 'application/vnd.github.v3+json',
