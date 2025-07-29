@@ -306,25 +306,14 @@ export default function Dashboard() {
 <div className="flex items-center space-x-3">
   <button
     onClick={() => router.push('/scan/new')}
-    className="bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded-lg text-white font-medium transition-colors flex items-center space-x-2"
+    className="bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded-lg text-white font-medium transition-colors flex items-center space-x-2"
   >
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 25 24" style={{marginLeft:"-4px"}}>
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
     </svg>
-    <span className="hidden sm:inline">New Scan</span>
+    <span className="hidden sm:inline" style={{marginLeft:0}}>New Scan</span>
   </button>
   
-  <div className="h-4 border-l border-gray-600 hidden md:block"></div>
-  
-  <button
-    onClick={() => router.push('/scan/history')}
-    className="text-gray-400 hover:text-white text-sm transition-colors items-center space-x-1 hidden md:flex"
-  >
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-    </svg>
-    <span>View All</span>
-  </button>
   
   <div className="h-4 border-l border-gray-600 hidden md:block"></div>
   

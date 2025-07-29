@@ -98,7 +98,7 @@ class ApiClient {
             error: 'Invalid response format',
           };
         }
-  
+        
         // Handle different HTTP status codes
         if (response.status === 401) {
           // Token expired or invalid
@@ -455,7 +455,7 @@ class ApiClient {
     value: string;
     environment: string;
   }): Promise<any> {
-    const response =  await this.request('/api/vault/store',
+    const response =  await this.request('/api/vault/keys',
       {
         method: 'POST',
         body: JSON.stringify(request)
