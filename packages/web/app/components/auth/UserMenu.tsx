@@ -25,12 +25,12 @@ export default function UserMenu() {
     try {
       await logout();
       setIsOpen(false);
-      router.push('/'); // Redirect to home after logout
+      router.push('/login') // Redirect to home after logout
     } catch (error) {
       console.error('Logout failed:', error);
       // Still close menu and redirect on error
       setIsOpen(false);
-      router.push('/');
+      router.push('/login')
     }
   };
 
@@ -40,7 +40,7 @@ export default function UserMenu() {
   };
 
   if (!user) return null;
-
+  
   return (
     <div className="relative" ref={menuRef}>
       {/* User avatar button */}

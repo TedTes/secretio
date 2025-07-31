@@ -9,7 +9,6 @@ import UserMenu from './components/auth/UserMenu';
 
 export default function Home() {
   const [scanStatus, setScanStatus] = useState('')
-  const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [currentDemo, setCurrentDemo] = useState(0);
   const [animationPhase, setAnimationPhase] = useState(0);
@@ -51,7 +50,7 @@ export default function Home() {
   
   const handleScanClick = () => {
     if (!isAuthenticated) {
-      setShowLoginModal(true);
+      router.push("/login");
       return;
     }
     setScanStatus('Installing CLI...')
@@ -83,7 +82,7 @@ export default function Home() {
               {isAuthenticated ? (
                 <UserMenu />
               ) : (
-                <button onClick={() => setShowLoginModal(true)} className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors">
+                <button onClick={() => router.push("/login")} className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors">
                   Get Started
                 </button>
               )}
@@ -120,7 +119,7 @@ export default function Home() {
               {scanStatus || 'Try Live Demo'}
             </button>
             <button 
-              onClick={() => isAuthenticated ? window.location.href = '/dashboard' : setShowLoginModal(true)}
+              onClick={() => isAuthenticated ? window.location.href = '/dashboard' : router.push('/login')}
               className="border border-gray-600 hover:border-gray-400 px-8 py-4 rounded-lg font-semibold text-lg transition-colors"
             >
               Start Clean
@@ -857,7 +856,7 @@ export default function Home() {
               Try Live Demo
             </button>
             <button 
-              onClick={() => setShowLoginModal(true)}
+              onClick={() => router.push("/login")}
               className="border border-gray-600 hover:border-gray-400 px-8 py-4 rounded-lg font-semibold text-lg transition-colors"
             >
               Create Account
@@ -921,23 +920,6 @@ export default function Home() {
           </div>
         </div>
       </footer>
-      
-      <LoginModal 
-        isOpen={showLoginModal} 
-        onClose={() => setShowLoginModal(false)}
-        onSwitchToRegister={() => {
-          setShowLoginModal(false);
-          setShowRegisterModal(true);
-        }}
-      />
-      <RegisterModal 
-        isOpen={showRegisterModal} 
-        onClose={() => setShowRegisterModal(false)}
-        onSwitchToLogin={() => {
-          setShowRegisterModal(false);
-          setShowLoginModal(true);
-        }}
-      />
     </div>
   )
 }

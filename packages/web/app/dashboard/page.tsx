@@ -13,7 +13,7 @@ type UserStats = {
 };
 
 export default function Dashboard() {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading,isLoggingOut } = useAuth();
   const router = useRouter();
   
   // API hooks for user data
@@ -115,19 +115,19 @@ export default function Dashboard() {
   const hasMoreJobs = jobs && jobs.length > 5;
 
   // Loading state
-  if (isLoading) {
+  if (isLoading || isLoggingOut) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-white text-lg">Loading dashboard...</p>
+          <p className="text-white text-lg">  {isLoggingOut ? 'Signing out...' : 'Loading dashboard...'}</p>
         </div>
       </div>
     );
   }
 
   // Redirect if not authenticated
-  if (!isAuthenticated) {
+  if (!isAuthenticated  && !isLoggingOut) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto px-4">
@@ -139,7 +139,7 @@ export default function Dashboard() {
           <h1 className="text-2xl font-bold text-white mb-4">Access Required</h1>
           <p className="text-gray-300 mb-6">Please sign in to access your security dashboard.</p>
           <button 
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/login')}
             className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg text-white font-semibold transition-colors"
           >
             Sign In
@@ -167,12 +167,7 @@ export default function Dashboard() {
             
             {/* Navigation links */}
             <div className="flex items-center space-x-6">
-            {/* <button
-  onClick={() => router.push('/scan/new')}
-  className="text-gray-300 hover:text-white transition-colors text-sm font-medium hidden sm:block"
->
-  New Scan
-</button> */}
+
           <UserMenu />
             </div>
           </div>

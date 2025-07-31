@@ -8,6 +8,7 @@ interface AuthContextType {
   user: User | null;
   session: AuthSession | null;
   isLoading: boolean;
+  isLoggingOut:boolean;
   isAuthenticated: boolean;
   login: (credentials: LoginRequest) => Promise<void>;
   register: (userData: RegisterRequest) => Promise<void>;
@@ -28,6 +29,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<AuthSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const isAuthenticated = !!user && !!session;
@@ -143,7 +145,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const logout = async () => {
     try {
       setIsLoading(true);
-      
+      setIsLoggingOut(true);
       // Call logout endpoint
       await apiClient.logout();
     } catch (error) {
@@ -156,8 +158,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       // Clear stored tokens
       localStorage.removeItem('refresh_token');
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('auth_token');
       
       setIsLoading(false);
+
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
     }
   };
 
@@ -204,6 +212,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     user,
     session,
     isLoading,
+    isLoggingOut,
     isAuthenticated,
     login,
     register,
