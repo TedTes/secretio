@@ -221,6 +221,7 @@ export default function Home() {
     </section>
 
 {/*  SECTION 2: Dashboard Results Demo */}
+{/* SECTION 2: Dashboard Results Demo with Smooth Roll Transitions */}
 <section className="py-20 bg-slate-800/30">
   <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
     <div className="text-center mb-16">
@@ -250,331 +251,432 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Dashboard Demo Container */}
-      <div className="bg-gray-900 rounded-lg border border-gray-700 p-6 text-left overflow-hidden" style={{minHeight: '500px'}}>
-        <div className="relative h-full">
+      {/* Dashboard Demo Container - No border, open layout */}
+      <div className="text-left overflow-hidden" style={{height: '500px'}}>
+        <div className="relative h-full max-w-5xl mx-auto">
           
           {/* Demo 1: Scan Results */}
           <div className={`absolute inset-0 transition-all duration-700 ease-in-out transform ${
             currentDemo === 0 
               ? 'translate-y-0 opacity-100' 
-              : currentDemo < 0 
-                ? 'translate-y-full opacity-0' 
-                : '-translate-y-full opacity-0'
+              : currentDemo > 0 
+                ? '-translate-y-full opacity-0' 
+                : 'translate-y-full opacity-0'
           }`}>
-           <div className="h-full">
-  <div className="flex items-center justify-between mb-6">
-    <div className="flex items-center">
-      <div className="flex space-x-2 mr-4">
-        <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-        <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-      </div>
-      <span className="text-gray-400 text-sm">myproject/frontend-app</span>
-    </div>
-    <div className={`px-2 py-1 text-xs rounded transition-all duration-1000 ${
-      animationPhase >= 2 
-        ? 'bg-green-500/20 text-green-400 border border-green-500/20' 
-        : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/20'
-    }`}>
-      {animationPhase >= 2 ? 'COMPLETED' : 'SCANNING...'}
-    </div>
-  </div>
-  
-  <div className="grid grid-cols-4 gap-4 mb-6">
-    <div className="bg-slate-800 rounded p-3 text-center">
-      <div className={`text-xl font-bold text-red-400 transition-all duration-1000 ${
-        animationPhase >= 1 ? 'scale-110' : ''
-      }`}>
-        {animationPhase >= 1 ? '3' : '0'}
-      </div>
-      <div className="text-xs text-gray-400">Keys Found</div>
-    </div>
-    <div className="bg-slate-800 rounded p-3 text-center">
-      <div className={`text-xl font-bold text-blue-400 transition-all duration-1000 ${
-        animationPhase >= 1 ? 'scale-110' : ''
-      }`}>
-        {animationPhase >= 1 ? '47' : '0'}
-      </div>
-      <div className="text-xs text-gray-400">Files Scanned</div>
-    </div>
-    <div className="bg-slate-800 rounded p-3 text-center">
-      <div className={`text-xl font-bold text-yellow-400 transition-all duration-1000 ${
-        animationPhase >= 1 ? 'scale-110' : ''
-      }`}>
-        {animationPhase >= 1 ? '2' : '0'}
-      </div>
-      <div className="text-xs text-gray-400">High Severity</div>
-    </div>
-    <div className="bg-slate-800 rounded p-3 text-center">
-      <div className={`text-xl font-bold text-green-400 transition-all duration-1000 ${
-        animationPhase >= 2 ? 'scale-110' : ''
-      }`}>
-        {animationPhase >= 2 ? '1.2s' : '...'}
-      </div>
-      <div className="text-xs text-gray-400">Scan Time</div>
-    </div>
-  </div>
-  
-  <div className="space-y-3">
-    <div className={`bg-red-900/30 border border-red-500/50 rounded p-4 transition-all duration-1000 transform ${
-      animationPhase >= 1 ? 'translate-x-0 opacity-100' : 'translate-x-4 opacity-0'
-    }`}>
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center space-x-3">
-          <span className="bg-red-500 text-white px-2 py-1 text-xs rounded font-bold">HIGH</span>
-          <span className="text-white font-mono text-sm">src/config/payments.js</span>
-          <span className="text-red-400 text-xs">Line 12</span>
-        </div>
-        <span className={`text-blue-400 px-3 py-1 text-xs rounded border border-blue-500/30 cursor-default ${
-          animationPhase >= 3 ? 'opacity-100' : 'opacity-60'
-        }`}>
-          Store in Vault
-        </span>
-      </div>
-      <div className="text-xs text-gray-300 mb-2">Stripe Secret Key detected</div>
-      <div className="font-mono text-xs bg-black/30 p-2 rounded text-red-300">sk_live_51H***************</div>
-    </div>
-    
-    <div className={`bg-red-900/30 border border-red-500/50 rounded p-4 transition-all duration-1000 delay-300 transform ${
-      animationPhase >= 1 ? 'translate-x-0 opacity-100' : 'translate-x-4 opacity-0'
-    }`}>
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center space-x-3">
-          <span className="bg-red-500 text-white px-2 py-1 text-xs rounded font-bold">HIGH</span>
-          <span className="text-white font-mono text-sm">config/aws.json</span>
-          <span className="text-red-400 text-xs">Line 3</span>
-        </div>
-        <span className={`text-blue-400 px-3 py-1 text-xs rounded border border-blue-500/30 cursor-default ${
-          animationPhase >= 3 ? 'opacity-100' : 'opacity-60'
-        }`}>
-          Store in Vault
-        </span>
-      </div>
-      <div className="text-xs text-gray-300 mb-2">AWS Access Key detected</div>
-      <div className="font-mono text-xs bg-black/30 p-2 rounded text-red-300">AKIA***************</div>
-    </div>
-    
-    <div className={`bg-yellow-900/30 border border-yellow-500/50 rounded p-4 transition-all duration-1000 delay-500 transform ${
-      animationPhase >= 1 ? 'translate-x-0 opacity-100' : 'translate-x-4 opacity-0'
-    }`}>
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center space-x-3">
-          <span className="bg-yellow-500 text-black px-2 py-1 text-xs rounded font-bold">MED</span>
-          <span className="text-white font-mono text-sm">README.md</span>
-          <span className="text-yellow-400 text-xs">Line 23</span>
-        </div>
-        <span className="text-gray-500 px-3 py-1 text-xs rounded border border-gray-600/30 cursor-default opacity-60">
-          Ignore
-        </span>
-      </div>
-      <div className="text-xs text-gray-300 mb-2">OpenAI API Key in documentation</div>
-      <div className="font-mono text-xs bg-black/30 p-2 rounded text-yellow-300">sk-proj-***************</div>
-    </div>
-  </div>
-</div>
+            <div className="h-full">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center">
+                  <div className="flex space-x-2 mr-4">
+                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  </div>
+                  <span className="text-gray-400 text-sm">myproject/frontend-app</span>
+                </div>
+                <div className={`px-2 py-1 text-xs rounded transition-all duration-1000 ${
+                  animationPhase >= 2 
+                    ? 'bg-green-500/20 text-green-400 border border-green-500/20' 
+                    : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/20'
+                }`}>
+                  {animationPhase >= 2 ? 'COMPLETED' : 'SCANNING...'}
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-4 gap-4 mb-6">
+                <div className="bg-slate-800 rounded p-3 text-center">
+                  <div className={`text-xl font-bold text-red-400 transition-all duration-1000 ${
+                    animationPhase >= 1 ? 'scale-110' : ''
+                  }`}>
+                    {animationPhase >= 1 ? '3' : '0'}
+                  </div>
+                  <div className="text-xs text-gray-400">Keys Found</div>
+                </div>
+                <div className="bg-slate-800 rounded p-3 text-center">
+                  <div className={`text-xl font-bold text-blue-400 transition-all duration-1000 ${
+                    animationPhase >= 1 ? 'scale-110' : ''
+                  }`}>
+                    {animationPhase >= 1 ? '47' : '0'}
+                  </div>
+                  <div className="text-xs text-gray-400">Files Scanned</div>
+                </div>
+                <div className="bg-slate-800 rounded p-3 text-center">
+                  <div className={`text-xl font-bold text-yellow-400 transition-all duration-1000 ${
+                    animationPhase >= 1 ? 'scale-110' : ''
+                  }`}>
+                    {animationPhase >= 1 ? '2' : '0'}
+                  </div>
+                  <div className="text-xs text-gray-400">High Severity</div>
+                </div>
+                <div className="bg-slate-800 rounded p-3 text-center">
+                  <div className={`text-xl font-bold text-green-400 transition-all duration-1000 ${
+                    animationPhase >= 2 ? 'scale-110' : ''
+                  }`}>
+                    {animationPhase >= 2 ? '1.2s' : '...'}
+                  </div>
+                  <div className="text-xs text-gray-400">Scan Time</div>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <div className={`bg-red-900/30 border border-red-500/50 rounded p-4 transition-all duration-1000 transform ${
+                  animationPhase >= 1 ? 'translate-x-0 opacity-100' : 'translate-x-4 opacity-0'
+                }`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-3">
+                      <span className="bg-red-500 text-white px-2 py-1 text-xs rounded font-bold">HIGH</span>
+                      <span className="text-white font-mono text-sm">src/config/payments.js</span>
+                      <span className="text-red-400 text-xs">Line 12</span>
+                    </div>
+                    <span className={`text-blue-400 px-3 py-1 text-xs rounded border border-blue-500/30 cursor-default ${
+                      animationPhase >= 3 ? 'opacity-100' : 'opacity-60'
+                    }`}>
+                      Store in Vault
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-300 mb-2">Stripe Secret Key detected</div>
+                  <div className="font-mono text-xs bg-black/30 p-2 rounded text-red-300">sk_live_51H***************</div>
+                </div>
+                
+                <div className={`bg-red-900/30 border border-red-500/50 rounded p-4 transition-all duration-1000 delay-300 transform ${
+                  animationPhase >= 1 ? 'translate-x-0 opacity-100' : 'translate-x-4 opacity-0'
+                }`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-3">
+                      <span className="bg-red-500 text-white px-2 py-1 text-xs rounded font-bold">HIGH</span>
+                      <span className="text-white font-mono text-sm">config/aws.json</span>
+                      <span className="text-red-400 text-xs">Line 3</span>
+                    </div>
+                    <span className={`text-blue-400 px-3 py-1 text-xs rounded border border-blue-500/30 cursor-default ${
+                      animationPhase >= 3 ? 'opacity-100' : 'opacity-60'
+                    }`}>
+                      Store in Vault
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-300 mb-2">AWS Access Key detected</div>
+                  <div className="font-mono text-xs bg-black/30 p-2 rounded text-red-300">AKIA***************</div>
+                </div>
+                
+                <div className={`bg-yellow-900/30 border border-yellow-500/50 rounded p-4 transition-all duration-1000 delay-500 transform ${
+                  animationPhase >= 1 ? 'translate-x-0 opacity-100' : 'translate-x-4 opacity-0'
+                }`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-3">
+                      <span className="bg-yellow-500 text-black px-2 py-1 text-xs rounded font-bold">MED</span>
+                      <span className="text-white font-mono text-sm">README.md</span>
+                      <span className="text-yellow-400 text-xs">Line 23</span>
+                    </div>
+                    <span className="text-gray-500 px-3 py-1 text-xs rounded border border-gray-600/30 cursor-default opacity-60">
+                      Ignore
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-300 mb-2">OpenAI API Key in documentation</div>
+                  <div className="font-mono text-xs bg-black/30 p-2 rounded text-yellow-300">sk-proj-***************</div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Demo 2: Dashboard Overview */}
           <div className={`absolute inset-0 transition-all duration-700 ease-in-out transform ${
             currentDemo === 1 
               ? 'translate-y-0 opacity-100' 
-              : currentDemo < 1 
-                ? 'translate-y-full opacity-0' 
-                : '-translate-y-full opacity-0'
+              : currentDemo > 1 
+                ? '-translate-y-full opacity-0' 
+                : 'translate-y-full opacity-0'
           }`}>
-           <div className="h-full">
-  <div className="flex items-center justify-between mb-6">
-    <h3 className="text-lg font-semibold text-white">Dashboard Overview</h3>
-    <div className="flex items-center space-x-2">
-      <span className="text-blue-400 px-3 py-1 rounded text-sm border border-blue-500/30 cursor-default opacity-60">
-        New Scan
-      </span>
-      <div className="w-8 h-8 bg-slate-700 rounded-full flex items-center justify-center">
-        <span className="text-sm">JD</span>
-      </div>
-    </div>
-  </div>
-  
-  <div className="grid grid-cols-4 gap-4 mb-6">
-    <div className="bg-slate-800 rounded p-4 text-center">
-      <div className={`text-2xl font-bold text-blue-400 transition-all duration-1000 ${
-        animationPhase >= 1 ? 'scale-110' : ''
-      }`}>
-        {animationPhase >= 1 ? (animationPhase >= 2 ? '13' : '12') : '11'}
-      </div>
-      <div className="text-sm text-gray-400">Total Scans</div>
-    </div>
-    <div className="bg-slate-800 rounded p-4 text-center">
-      <div className={`text-2xl font-bold text-red-400 transition-all duration-1000 ${
-        animationPhase >= 1 ? 'scale-110' : ''
-      }`}>
-        {animationPhase >= 1 ? (animationPhase >= 2 ? '26' : '23') : '20'}
-      </div>
-      <div className="text-sm text-gray-400">Keys Found</div>
-    </div>
-    <div className="bg-slate-800 rounded p-4 text-center">
-      <div className={`text-2xl font-bold text-green-400 transition-all duration-1000 ${
-        animationPhase >= 1 ? 'scale-110' : ''
-      }`}>
-        {animationPhase >= 1 ? (animationPhase >= 2 ? '894' : '847') : '803'}
-      </div>
-      <div className="text-sm text-gray-400">Files Scanned</div>
-    </div>
-    <div className="bg-slate-800 rounded p-4 text-center">
-      <div className={`text-2xl font-bold text-purple-400 transition-all duration-1000 ${
-        animationPhase >= 2 ? 'scale-110' : ''
-      }`}>
-        {animationPhase >= 2 ? '89%' : '85%'}
-      </div>
-      <div className="text-sm text-gray-400">Security Score</div>
-    </div>
-  </div>
-  
-  <div className="space-y-2">
-    {animationPhase >= 1 && (
-      <div className={`flex items-center justify-between bg-slate-800 rounded p-3 transition-all duration-500 transform ${
-        animationPhase >= 1 ? 'translate-x-0 opacity-100' : 'translate-x-4 opacity-0'
-      }`}>
-        <div className="flex items-center space-x-3">
-          <span className="text-gray-300">new-feature-branch</span>
-          <span className="text-xs text-gray-500">2 min ago</span>
-          <span className={`px-2 py-1 text-xs rounded transition-all duration-1000 ${
-            animationPhase >= 2 ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
+            <div className="h-full">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-white">Dashboard Overview</h3>
+                <div className="flex items-center space-x-2">
+                  <span className="text-blue-400 px-3 py-1 rounded text-sm border border-blue-500/30 cursor-default opacity-60">
+                    New Scan
+                  </span>
+                  <div className="w-8 h-8 bg-slate-700 rounded-full flex items-center justify-center">
+                    <span className="text-sm">JD</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-4 gap-4 mb-6">
+                <div className="bg-slate-800 rounded p-4 text-center">
+                  <div className={`text-2xl font-bold text-blue-400 transition-all duration-1000 ${
+                    animationPhase >= 1 ? 'scale-110' : ''
+                  }`}>
+                    {animationPhase >= 1 ? (animationPhase >= 2 ? '13' : '12') : '11'}
+                  </div>
+                  <div className="text-sm text-gray-400">Total Scans</div>
+                </div>
+                <div className="bg-slate-800 rounded p-4 text-center">
+                  <div className={`text-2xl font-bold text-red-400 transition-all duration-1000 ${
+                    animationPhase >= 1 ? 'scale-110' : ''
+                  }`}>
+                    {animationPhase >= 1 ? (animationPhase >= 2 ? '26' : '23') : '20'}
+                  </div>
+                  <div className="text-sm text-gray-400">Keys Found</div>
+                </div>
+                <div className="bg-slate-800 rounded p-4 text-center">
+                  <div className={`text-2xl font-bold text-green-400 transition-all duration-1000 ${
+                    animationPhase >= 1 ? 'scale-110' : ''
+                  }`}>
+                    {animationPhase >= 1 ? (animationPhase >= 2 ? '894' : '847') : '803'}
+                  </div>
+                  <div className="text-sm text-gray-400">Files Scanned</div>
+                </div>
+                <div className="bg-slate-800 rounded p-4 text-center">
+                  <div className={`text-2xl font-bold text-purple-400 transition-all duration-1000 ${
+                    animationPhase >= 2 ? 'scale-110' : ''
+                  }`}>
+                    {animationPhase >= 2 ? '89%' : '85%'}
+                  </div>
+                  <div className="text-sm text-gray-400">Security Score</div>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                {animationPhase >= 1 && (
+                  <div className={`flex items-center justify-between bg-slate-800 rounded p-3 transition-all duration-500 transform ${
+                    animationPhase >= 1 ? 'translate-x-0 opacity-100' : 'translate-x-4 opacity-0'
+                  }`}>
+                    <div className="flex items-center space-x-3">
+                      <span className="text-gray-300">new-feature-branch</span>
+                      <span className="text-xs text-gray-500">2 min ago</span>
+                      <span className={`px-2 py-1 text-xs rounded transition-all duration-1000 ${
+                        animationPhase >= 2 ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
+                      }`}>
+                        {animationPhase >= 2 ? 'COMPLETED' : 'SCANNING'}
+                      </span>
+                    </div>
+                    <span className={`px-2 py-1 text-xs rounded transition-all duration-1000 ${
+                      animationPhase >= 2 ? 'bg-red-600/20 text-red-400' : 'bg-gray-600/20 text-gray-400'
+                    }`}>
+                      {animationPhase >= 2 ? '3 keys' : '...'}
+                    </span>
+                  </div>
+                )}
+                
+                <div className="flex items-center justify-between bg-slate-800 rounded p-3">
+                  <div className="flex items-center space-x-3">
+                    <span className="text-gray-300">frontend-app</span>
+                    <span className="text-xs text-gray-500">2 hours ago</span>
+                  </div>
+                  <span className="bg-red-600/20 text-red-400 px-2 py-1 text-xs rounded">3 keys</span>
+                </div>
+                <div className="flex items-center justify-between bg-slate-800 rounded p-3">
+                  <div className="flex items-center space-x-3">
+                    <span className="text-gray-300">api-server</span>
+                    <span className="text-xs text-gray-500">1 day ago</span>
+                  </div>
+                  <span className="bg-yellow-600/20 text-yellow-400 px-2 py-1 text-xs rounded">1 key</span>
+                </div>
+                <div className="flex items-center justify-between bg-slate-800 rounded p-3">
+                  <div className="flex items-center space-x-3">
+                    <span className="text-gray-300">mobile-app</span>
+                    <span className="text-xs text-gray-500">3 days ago</span>
+                  </div>
+                  <span className="bg-green-600/20 text-green-400 px-2 py-1 text-xs rounded">0 keys</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Demo 2: Dashboard Overview */}
+          <div className={`absolute inset-0 transition-all duration-700 ease-in-out transform ${
+            currentDemo === 1 
+              ? 'translate-y-0 opacity-100' 
+              : currentDemo > 1 
+                ? '-translate-y-full opacity-0' 
+                : 'translate-y-full opacity-0'
           }`}>
-            {animationPhase >= 2 ? 'COMPLETED' : 'SCANNING'}
-          </span>
-        </div>
-        <span className={`px-2 py-1 text-xs rounded transition-all duration-1000 ${
-          animationPhase >= 2 ? 'bg-red-600/20 text-red-400' : 'bg-gray-600/20 text-gray-400'
-        }`}>
-          {animationPhase >= 2 ? '3 keys' : '...'}
-        </span>
-      </div>
-    )}
-    
-    <div className="flex items-center justify-between bg-slate-800 rounded p-3">
-      <div className="flex items-center space-x-3">
-        <span className="text-gray-300">frontend-app</span>
-        <span className="text-xs text-gray-500">2 hours ago</span>
-      </div>
-      <span className="bg-red-600/20 text-red-400 px-2 py-1 text-xs rounded">3 keys</span>
-    </div>
-    <div className="flex items-center justify-between bg-slate-800 rounded p-3">
-      <div className="flex items-center space-x-3">
-        <span className="text-gray-300">api-server</span>
-        <span className="text-xs text-gray-500">1 day ago</span>
-      </div>
-      <span className="bg-yellow-600/20 text-yellow-400 px-2 py-1 text-xs rounded">1 key</span>
-    </div>
-    <div className="flex items-center justify-between bg-slate-800 rounded p-3">
-      <div className="flex items-center space-x-3">
-        <span className="text-gray-300">mobile-app</span>
-        <span className="text-xs text-gray-500">3 days ago</span>
-      </div>
-      <span className="bg-green-600/20 text-green-400 px-2 py-1 text-xs rounded">0 keys</span>
-    </div>
-  </div>
-</div>
+            <div className="h-full">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-white">Dashboard Overview</h3>
+                <div className="flex items-center space-x-2">
+                  <span className="text-blue-400 px-3 py-1 rounded text-sm border border-blue-500/30 cursor-default opacity-60">
+                    New Scan
+                  </span>
+                  <div className="w-8 h-8 bg-slate-700 rounded-full flex items-center justify-center">
+                    <span className="text-sm">JD</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-4 gap-4 mb-6">
+                <div className="bg-slate-800 rounded p-4 text-center">
+                  <div className={`text-2xl font-bold text-blue-400 transition-all duration-1000 ${
+                    animationPhase >= 1 ? 'scale-110' : ''
+                  }`}>
+                    {animationPhase >= 1 ? (animationPhase >= 2 ? '13' : '12') : '11'}
+                  </div>
+                  <div className="text-sm text-gray-400">Total Scans</div>
+                </div>
+                <div className="bg-slate-800 rounded p-4 text-center">
+                  <div className={`text-2xl font-bold text-red-400 transition-all duration-1000 ${
+                    animationPhase >= 1 ? 'scale-110' : ''
+                  }`}>
+                    {animationPhase >= 1 ? (animationPhase >= 2 ? '26' : '23') : '20'}
+                  </div>
+                  <div className="text-sm text-gray-400">Keys Found</div>
+                </div>
+                <div className="bg-slate-800 rounded p-4 text-center">
+                  <div className={`text-2xl font-bold text-green-400 transition-all duration-1000 ${
+                    animationPhase >= 1 ? 'scale-110' : ''
+                  }`}>
+                    {animationPhase >= 1 ? (animationPhase >= 2 ? '894' : '847') : '803'}
+                  </div>
+                  <div className="text-sm text-gray-400">Files Scanned</div>
+                </div>
+                <div className="bg-slate-800 rounded p-4 text-center">
+                  <div className={`text-2xl font-bold text-purple-400 transition-all duration-1000 ${
+                    animationPhase >= 2 ? 'scale-110' : ''
+                  }`}>
+                    {animationPhase >= 2 ? '89%' : '85%'}
+                  </div>
+                  <div className="text-sm text-gray-400">Security Score</div>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                {animationPhase >= 1 && (
+                  <div className={`flex items-center justify-between bg-slate-800 rounded p-3 transition-all duration-500 transform ${
+                    animationPhase >= 1 ? 'translate-x-0 opacity-100' : 'translate-x-4 opacity-0'
+                  }`}>
+                    <div className="flex items-center space-x-3">
+                      <span className="text-gray-300">new-feature-branch</span>
+                      <span className="text-xs text-gray-500">2 min ago</span>
+                      <span className={`px-2 py-1 text-xs rounded transition-all duration-1000 ${
+                        animationPhase >= 2 ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
+                      }`}>
+                        {animationPhase >= 2 ? 'COMPLETED' : 'SCANNING'}
+                      </span>
+                    </div>
+                    <span className={`px-2 py-1 text-xs rounded transition-all duration-1000 ${
+                      animationPhase >= 2 ? 'bg-red-600/20 text-red-400' : 'bg-gray-600/20 text-gray-400'
+                    }`}>
+                      {animationPhase >= 2 ? '3 keys' : '...'}
+                    </span>
+                  </div>
+                )}
+                
+                <div className="flex items-center justify-between bg-slate-800 rounded p-3">
+                  <div className="flex items-center space-x-3">
+                    <span className="text-gray-300">frontend-app</span>
+                    <span className="text-xs text-gray-500">2 hours ago</span>
+                  </div>
+                  <span className="bg-red-600/20 text-red-400 px-2 py-1 text-xs rounded">3 keys</span>
+                </div>
+                <div className="flex items-center justify-between bg-slate-800 rounded p-3">
+                  <div className="flex items-center space-x-3">
+                    <span className="text-gray-300">api-server</span>
+                    <span className="text-xs text-gray-500">1 day ago</span>
+                  </div>
+                  <span className="bg-yellow-600/20 text-yellow-400 px-2 py-1 text-xs rounded">1 key</span>
+                </div>
+                <div className="flex items-center justify-between bg-slate-800 rounded p-3">
+                  <div className="flex items-center space-x-3">
+                    <span className="text-gray-300">mobile-app</span>
+                    <span className="text-xs text-gray-500">3 days ago</span>
+                  </div>
+                  <span className="bg-green-600/20 text-green-400 px-2 py-1 text-xs rounded">0 keys</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Demo 3: Vault Storage */}
           <div className={`absolute inset-0 transition-all duration-700 ease-in-out transform ${
             currentDemo === 2 
               ? 'translate-y-0 opacity-100' 
-              : currentDemo < 2 
-                ? 'translate-y-full opacity-0' 
-                : '-translate-y-full opacity-0'
+              : 'translate-y-full opacity-0'
           }`}>
-         <div className="h-full">
-  <div className="flex items-center justify-between mb-6">
-    <div className="flex items-center space-x-4">
-      <h3 className="text-lg font-semibold text-white">Vault Storage</h3>
-      <select className={`bg-slate-700 border border-gray-600 text-white rounded px-3 py-1 text-sm cursor-default transition-all duration-500 ${
-        animationPhase >= 1 ? 'ring-1 ring-blue-500/50' : ''
-      }`}>
-        <option>production</option>
-        <option>staging</option>
-        <option>development</option>
-      </select>
-    </div>
-    <span className={`text-blue-400 px-3 py-1 rounded text-sm border border-blue-500/30 cursor-default transition-all duration-500 ${
-      animationPhase >= 2 ? 'opacity-100' : 'opacity-60'
-    }`}>
-      + Add Key
-    </span>
-  </div>
-  
-  <div className="space-y-3">
-    {animationPhase >= 1 && (
-      <div className={`bg-slate-800 rounded p-4 transition-all duration-500 transform ${
-        animationPhase >= 1 ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'
-      }`}>
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="font-semibold text-white">NEW_STRIPE_KEY</div>
-            <div className="text-sm text-gray-400">Just added • Never accessed</div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <span className="bg-green-600/20 text-green-400 px-2 py-1 text-xs rounded">Active</span>
-            <span className="text-gray-400 cursor-default">⋯</span>
-          </div>
-        </div>
-      </div>
-    )}
-    
-    <div className="bg-slate-800 rounded p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="font-semibold text-white">STRIPE_SECRET_KEY</div>
-          <div className={`text-sm text-gray-400 transition-all duration-500 ${
-            animationPhase >= 3 ? 'text-green-400' : ''
-          }`}>
-            Added 2 days ago • Last accessed {animationPhase >= 3 ? 'just now' : '4 hours ago'}
-          </div>
-        </div>
-        <div className="flex items-center space-x-2">
-          <span className="bg-green-600/20 text-green-400 px-2 py-1 text-xs rounded">Active</span>
-          <span className="text-gray-400 cursor-default">⋯</span>
-        </div>
-      </div>
-    </div>
-    
-    <div className="bg-slate-800 rounded p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="font-semibold text-white">AWS_ACCESS_KEY_ID</div>
-          <div className="text-sm text-gray-400">Added 1 week ago • Last accessed 2 hours ago</div>
-        </div>
-        <div className="flex items-center space-x-2">
-          <span className="bg-green-600/20 text-green-400 px-2 py-1 text-xs rounded">Active</span>
-          <span className="text-gray-400 cursor-default">⋯</span>
-        </div>
-      </div>
-    </div>
-    
-    <div className="bg-slate-800 rounded p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="font-semibold text-white">OPENAI_API_KEY</div>
-          <div className="text-sm text-gray-400">Added 3 days ago • Last accessed 1 hour ago</div>
-        </div>
-        <div className="flex items-center space-x-2">
-          <span className="bg-green-600/20 text-green-400 px-2 py-1 text-xs rounded">Active</span>
-          <span className="text-gray-400 cursor-default">⋯</span>
-        </div>
-      </div>
-    </div>
-  </div>
-  
-  <div className="mt-6 text-center">
-    <p className={`text-sm text-gray-400 transition-all duration-500 ${
-      animationPhase >= 1 ? 'text-blue-400' : ''
-    }`}>
-      {animationPhase >= 1 ? '4 keys stored • AES-256 encrypted • Environment: production' : '3 keys stored • AES-256 encrypted • Environment: production'}
-    </p>
-  </div>
-</div>
+            <div className="h-full">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-4">
+                  <h3 className="text-lg font-semibold text-white">Vault Storage</h3>
+                  <select className={`bg-slate-700 border border-gray-600 text-white rounded px-3 py-1 text-sm cursor-default transition-all duration-500 ${
+                    animationPhase >= 1 ? 'ring-1 ring-blue-500/50' : ''
+                  }`}>
+                    <option>production</option>
+                    <option>staging</option>
+                    <option>development</option>
+                  </select>
+                </div>
+                <span className={`text-blue-400 px-3 py-1 rounded text-sm border border-blue-500/30 cursor-default transition-all duration-500 ${
+                  animationPhase >= 2 ? 'opacity-100' : 'opacity-60'
+                }`}>
+                  + Add Key
+                </span>
+              </div>
+              
+              <div className="space-y-3">
+                {animationPhase >= 1 && (
+                  <div className={`bg-slate-800 rounded p-4 transition-all duration-500 transform ${
+                    animationPhase >= 1 ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-semibold text-white">NEW_STRIPE_KEY</div>
+                        <div className="text-sm text-gray-400">Just added • Never accessed</div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="bg-green-600/20 text-green-400 px-2 py-1 text-xs rounded">Active</span>
+                        <span className="text-gray-400 cursor-default">⋯</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="bg-slate-800 rounded p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-semibold text-white">STRIPE_SECRET_KEY</div>
+                      <div className={`text-sm text-gray-400 transition-all duration-500 ${
+                        animationPhase >= 3 ? 'text-green-400' : ''
+                      }`}>
+                        Added 2 days ago • Last accessed {animationPhase >= 3 ? 'just now' : '4 hours ago'}
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="bg-green-600/20 text-green-400 px-2 py-1 text-xs rounded">Active</span>
+                      <span className="text-gray-400 cursor-default">⋯</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-slate-800 rounded p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-semibold text-white">AWS_ACCESS_KEY_ID</div>
+                      <div className="text-sm text-gray-400">Added 1 week ago • Last accessed 2 hours ago</div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="bg-green-600/20 text-green-400 px-2 py-1 text-xs rounded">Active</span>
+                      <span className="text-gray-400 cursor-default">⋯</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-slate-800 rounded p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-semibold text-white">OPENAI_API_KEY</div>
+                      <div className="text-sm text-gray-400">Added 3 days ago • Last accessed 1 hour ago</div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="bg-green-600/20 text-green-400 px-2 py-1 text-xs rounded">Active</span>
+                      <span className="text-gray-400 cursor-default">⋯</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-6 text-center">
+                <p className={`text-sm text-gray-400 transition-all duration-500 ${
+                  animationPhase >= 1 ? 'text-blue-400' : ''
+                }`}>
+                  {animationPhase >= 1 ? '4 keys stored • AES-256 encrypted • Environment: production' : '3 keys stored • AES-256 encrypted • Environment: production'}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
