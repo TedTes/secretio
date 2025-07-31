@@ -9,8 +9,9 @@ import UserMenu from './components/auth/UserMenu';
 
 export default function Home() {
   const [scanStatus, setScanStatus] = useState('')
-  const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [currentDemo, setCurrentDemo] = useState(0);
+  const [demoActive, setDemoActive] = useState(false);
+  const [terminalLines, setTerminalLines] = useState<Array<{text: string; delay: number; type: string}>>([]);
   const [animationPhase, setAnimationPhase] = useState(0);
   
   const { isAuthenticated, isLoading} = useAuth();
@@ -25,20 +26,62 @@ export default function Home() {
   // Demo cycling animation
   useEffect(() => {
     const interval = setInterval(() => {
-      setAnimationPhase(prev => (prev + 1) % 4);
-    }, 2000);
+      setCurrentDemo(prev => (prev + 1) % 3); // cycle through 3 dashboard demos
+      setAnimationPhase(0);
+    }, 6000); // Every 6 seconds
     return () => clearInterval(interval);
   }, []);
 
+  const runTerminalDemo = () => {
+    const lines = [
+      { text: '$ secretio scan', delay: 0, type: 'command' },
+      { text: '🔍 Initializing security scanner...', delay: 800, type: 'info' },
+      { text: '📁 Scanning myproject/frontend-app', delay: 1500, type: 'info' },
+      { text: '├── src/config/payments.js', delay: 2200, type: 'file' },
+      { text: '├── config/aws.json', delay: 2600, type: 'file' },
+      { text: '├── README.md', delay: 3000, type: 'file' },
+      { text: '└── ... scanning 44 more files', delay: 3400, type: 'file' },
+      { text: '', delay: 3800, type: 'spacer' },
+      { text: '❌ [HIGH] Stripe Secret Key detected!', delay: 4200, type: 'error' },
+      { text: '   └── src/config/payments.js:12', delay: 4500, type: 'location' },
+      { text: '❌ [HIGH] AWS Access Key detected!', delay: 4800, type: 'error' },
+      { text: '   └── config/aws.json:3', delay: 5100, type: 'location' },
+      { text: '⚠️  [MED] OpenAI API Key in documentation', delay: 5400, type: 'warning' },
+      { text: '   └── README.md:23', delay: 5700, type: 'location' },
+      { text: '', delay: 6000, type: 'spacer' },
+      { text: '✅ Scan completed in 1.2s', delay: 6300, type: 'success' },
+      { text: '📊 Found 3 exposed API keys in 47 files', delay: 6600, type: 'summary' },
+      { text: '💡 Run "secretio vault store" to secure them', delay: 7000, type: 'recommendation' }
+    ];
+    
+    // Add terminal lines progressively
+    lines.forEach((line) => {
+      setTimeout(() => {
+        setTerminalLines(prev => [...prev, line]);
+      }, line.delay);
+    });
+  };
   // Demo switching
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentDemo(prev => (prev + 1) % 3);
-      setAnimationPhase(0);
-    }, 8000);
+    // Auto-start terminal demo on page load
+    const startTerminalDemo = () => {
+      setTerminalLines([]);
+      runTerminalDemo();
+    };
+    
+    startTerminalDemo(); // Start immediately
+    
+    // Restart terminal demo every 15 seconds
+    const interval = setInterval(startTerminalDemo, 10000);
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setAnimationPhase(prev => (prev + 1) % 4);
+    }, 2000); // Every 2 seconds, progress through animation phases
+    return () => clearInterval(interval);
+  }, []);
   if (isLoading) {
     return <div className="min-h-screen bg-slate-900 flex items-center justify-center">
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
@@ -48,17 +91,27 @@ export default function Home() {
     return null; // Will redirect
   }
   
-  const handleScanClick = () => {
-    if (!isAuthenticated) {
-      router.push("/login");
-      return;
-    }
-    setScanStatus('Installing CLI...')
-    setTimeout(() => {
-      setScanStatus('CLI Installed! Run: secretio scan')
-    }, 2000)
-  }
 
+
+  const handleScanClick = () => {
+    if (demoActive) return;
+    
+    setDemoActive(true);
+    setTerminalLines([]);
+    setCurrentDemo(0);
+    setAnimationPhase(0);
+    setScanStatus('🔍 Running live demo...');
+    
+    runTerminalDemo();
+    
+    setTimeout(() => {
+      setScanStatus('✅ Try with your repos!');
+    }, 7000);
+    
+    setTimeout(() => {
+      setScanStatus('');
+    }, 10000);
+  };
   const demoTitles = ['Scan Results', 'Dashboard Overview', 'Vault Storage'];
 
   return (
@@ -91,500 +144,445 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-6xl mx-auto text-center">
-          <div className="inline-flex items-center bg-red-600/10 border border-red-600/20 rounded-full px-4 py-2 mb-8">
-            <svg className="w-4 h-4 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd"></path>
-            </svg>
-            <span className="text-red-500 text-sm font-medium">API keys exposed in repos daily</span>
-          </div>
-          
-          <h1 className="text-5xl sm:text-6xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-            Find exposed<br/>
-            <span className="text-blue-500">API keys</span> in your code
-          </h1>
-          
-          <p className="text-xl text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed">
-            Scan your repositories for exposed credentials. 
-            Detect API keys from Stripe, AWS, OpenAI, and other services scattered across your codebase.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
-            <button 
-              onClick={handleScanClick}
-              className="bg-blue-600 hover:bg-blue-700 px-8 py-4 rounded-lg font-semibold text-lg transition-all transform hover:scale-105"
-            >
-              {scanStatus || 'Try Live Demo'}
-            </button>
-            <button 
-              onClick={() => isAuthenticated ? window.location.href = '/dashboard' : router.push('/login')}
-              className="border border-gray-600 hover:border-gray-400 px-8 py-4 rounded-lg font-semibold text-lg transition-colors"
-            >
-              Start Clean
-            </button>
-          </div>
-
-      
-
-          {/* Demo Container */}
-          <div>
-  <div className="mb-8">
-    <div className="text-center mb-4">
-      <div className="inline-flex items-center space-x-8">
-        {demoTitles.map((title, index) => (
-          <div
-            key={index}
-            className={`relative px-2 py-1 text-sm transition-all duration-500 cursor-default ${
-              currentDemo === index 
-                ? 'text-white' 
-                : 'text-gray-400'
-            }`}
-          >
-            {title}
-            {currentDemo === index && (
-              <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-400 rounded transition-all duration-500"></div>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
+      {/* SECTION 1: Hero Section with Auto-Running Terminal Demo */}
+    <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
+<div className="max-w-6xl mx-auto text-center">
+  <div className="inline-flex items-center bg-red-600/10 border border-red-600/20 rounded-full px-4 py-2 mb-8">
+    <svg className="w-4 h-4 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd"></path>
+    </svg>
+    <span className="text-red-500 text-sm font-medium">API keys exposed in repos daily</span>
+  </div>
+  
+  <h1 className="text-5xl sm:text-6xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+    Find exposed<br/>
+    <span className="text-blue-500">API keys</span> in your code
+  </h1>
+  
+  <p className="text-xl text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed">
+    Scan your repositories for exposed credentials. 
+    Detect API keys from Stripe, AWS, OpenAI, and other services scattered across your codebase.
+  </p>
+  
+  <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
+    <button 
+      onClick={handleScanClick}
+      className="bg-blue-600 hover:bg-blue-700 px-8 py-4 rounded-lg font-semibold text-lg transition-all transform hover:scale-105"
+    >
+      {scanStatus || 'Try Live Demo'}
+    </button>
+    <button 
+      onClick={() => isAuthenticated ? window.location.href = '/dashboard' : router.push('/login')}
+      className="border border-gray-600 hover:border-gray-400 px-8 py-4 rounded-lg font-semibold text-lg transition-colors"
+    >
+      Start Clean
+    </button>
   </div>
 
-  <div className="bg-gray-900 rounded-lg border border-gray-700 p-6 max-w-5xl mx-auto text-left overflow-hidden" style={{minHeight: '500px'}}>
-    <div className="relative h-full">
-      
-      {/* Demo 1: Scan Results */}
-      <div className={`absolute inset-0 transition-all duration-700 ease-in-out transform ${
-        currentDemo === 0 
-          ? 'translate-y-0 opacity-100' 
-          : currentDemo < 0 
-            ? 'translate-y-full opacity-0' 
-            : '-translate-y-full opacity-0'
-      }`}>
-        <div className="h-full">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center">
-              <div className="flex space-x-2 mr-4">
-                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-              </div>
-              <span className="text-gray-400 text-sm">myproject/frontend-app</span>
-            </div>
-            <div className={`px-2 py-1 text-xs rounded transition-all duration-1000 ${
-              animationPhase >= 2 
-                ? 'bg-green-500/20 text-green-400 border border-green-500/20' 
-                : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/20'
-            }`}>
-              {animationPhase >= 2 ? 'COMPLETED' : 'SCANNING...'}
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-4 gap-4 mb-6">
-            <div className="bg-slate-800 rounded p-3 text-center">
-              <div className={`text-xl font-bold text-red-400 transition-all duration-1000 ${
-                animationPhase >= 1 ? 'scale-110' : ''
-              }`}>
-                {animationPhase >= 1 ? '3' : '0'}
-              </div>
-              <div className="text-xs text-gray-400">Keys Found</div>
-            </div>
-            <div className="bg-slate-800 rounded p-3 text-center">
-              <div className={`text-xl font-bold text-blue-400 transition-all duration-1000 ${
-                animationPhase >= 1 ? 'scale-110' : ''
-              }`}>
-                {animationPhase >= 1 ? '47' : '0'}
-              </div>
-              <div className="text-xs text-gray-400">Files Scanned</div>
-            </div>
-            <div className="bg-slate-800 rounded p-3 text-center">
-              <div className={`text-xl font-bold text-yellow-400 transition-all duration-1000 ${
-                animationPhase >= 1 ? 'scale-110' : ''
-              }`}>
-                {animationPhase >= 1 ? '2' : '0'}
-              </div>
-              <div className="text-xs text-gray-400">High Severity</div>
-            </div>
-            <div className="bg-slate-800 rounded p-3 text-center">
-              <div className={`text-xl font-bold text-green-400 transition-all duration-1000 ${
-                animationPhase >= 2 ? 'scale-110' : ''
-              }`}>
-                {animationPhase >= 2 ? '1.2s' : '...'}
-              </div>
-              <div className="text-xs text-gray-400">Scan Time</div>
-            </div>
-          </div>
-          
-          <div className="space-y-3">
-            <div className={`bg-red-900/30 border border-red-500/50 rounded p-4 transition-all duration-1000 transform ${
-              animationPhase >= 1 ? 'translate-x-0 opacity-100' : 'translate-x-4 opacity-0'
-            }`}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center space-x-3">
-                  <span className="bg-red-500 text-white px-2 py-1 text-xs rounded font-bold">HIGH</span>
-                  <span className="text-white font-mono text-sm">src/config/payments.js</span>
-                  <span className="text-red-400 text-xs">Line 12</span>
-                </div>
-                <span className={`text-blue-400 px-3 py-1 text-xs rounded border border-blue-500/30 cursor-default ${
-                  animationPhase >= 3 ? 'opacity-100' : 'opacity-60'
-                }`}>
-                  Store in Vault
-                </span>
-              </div>
-              <div className="text-xs text-gray-300 mb-2">Stripe Secret Key detected</div>
-              <div className="font-mono text-xs bg-black/30 p-2 rounded text-red-300">sk_live_51H***************</div>
-            </div>
-            
-            <div className={`bg-red-900/30 border border-red-500/50 rounded p-4 transition-all duration-1000 delay-300 transform ${
-              animationPhase >= 1 ? 'translate-x-0 opacity-100' : 'translate-x-4 opacity-0'
-            }`}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center space-x-3">
-                  <span className="bg-red-500 text-white px-2 py-1 text-xs rounded font-bold">HIGH</span>
-                  <span className="text-white font-mono text-sm">config/aws.json</span>
-                  <span className="text-red-400 text-xs">Line 3</span>
-                </div>
-                <span className={`text-blue-400 px-3 py-1 text-xs rounded border border-blue-500/30 cursor-default ${
-                  animationPhase >= 3 ? 'opacity-100' : 'opacity-60'
-                }`}>
-                  Store in Vault
-                </span>
-              </div>
-              <div className="text-xs text-gray-300 mb-2">AWS Access Key detected</div>
-              <div className="font-mono text-xs bg-black/30 p-2 rounded text-red-300">AKIA***************</div>
-            </div>
-            
-            <div className={`bg-yellow-900/30 border border-yellow-500/50 rounded p-4 transition-all duration-1000 delay-500 transform ${
-              animationPhase >= 1 ? 'translate-x-0 opacity-100' : 'translate-x-4 opacity-0'
-            }`}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center space-x-3">
-                  <span className="bg-yellow-500 text-black px-2 py-1 text-xs rounded font-bold">MED</span>
-                  <span className="text-white font-mono text-sm">README.md</span>
-                  <span className="text-yellow-400 text-xs">Line 23</span>
-                </div>
-                <span className="text-gray-500 px-3 py-1 text-xs rounded border border-gray-600/30 cursor-default opacity-60">
-                  Ignore
-                </span>
-              </div>
-              <div className="text-xs text-gray-300 mb-2">OpenAI API Key in documentation</div>
-              <div className="font-mono text-xs bg-black/30 p-2 rounded text-yellow-300">sk-proj-***************</div>
-            </div>
-          </div>
-        </div>
+  {/* TERMINAL DEMO - Auto-running */}
+  <div className="bg-gray-900 rounded-lg border border-gray-700 p-6 max-w-4xl mx-auto text-left" style={{minHeight: '400px'}}>
+    <div className="flex items-center mb-4">
+      <div className="flex space-x-2 mr-4">
+        <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+        <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
       </div>
-
-      {/* Demo 2: Dashboard */}
-      <div className={`absolute inset-0 transition-all duration-700 ease-in-out transform ${
-        currentDemo === 1 
-          ? 'translate-y-0 opacity-100' 
-          : currentDemo < 1 
-            ? 'translate-y-full opacity-0' 
-            : '-translate-y-full opacity-0'
-      }`}>
-        <div className="h-full">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-white">Dashboard Overview</h3>
-            <div className="flex items-center space-x-2">
-              <span className="text-blue-400 px-3 py-1 rounded text-sm border border-blue-500/30 cursor-default opacity-60">
-                New Scan
-              </span>
-              <div className="w-8 h-8 bg-slate-700 rounded-full flex items-center justify-center">
-                <span className="text-sm">JD</span>
-              </div>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-4 gap-4 mb-6">
-            <div className="bg-slate-800 rounded p-4 text-center">
-              <div className={`text-2xl font-bold text-blue-400 transition-all duration-1000 ${
-                animationPhase >= 1 ? 'scale-110' : ''
-              }`}>
-                {animationPhase >= 1 ? (animationPhase >= 2 ? '13' : '12') : '11'}
-              </div>
-              <div className="text-sm text-gray-400">Total Scans</div>
-            </div>
-            <div className="bg-slate-800 rounded p-4 text-center">
-              <div className={`text-2xl font-bold text-red-400 transition-all duration-1000 ${
-                animationPhase >= 1 ? 'scale-110' : ''
-              }`}>
-                {animationPhase >= 1 ? (animationPhase >= 2 ? '26' : '23') : '20'}
-              </div>
-              <div className="text-sm text-gray-400">Keys Found</div>
-            </div>
-            <div className="bg-slate-800 rounded p-4 text-center">
-              <div className={`text-2xl font-bold text-green-400 transition-all duration-1000 ${
-                animationPhase >= 1 ? 'scale-110' : ''
-              }`}>
-                {animationPhase >= 1 ? (animationPhase >= 2 ? '894' : '847') : '803'}
-              </div>
-              <div className="text-sm text-gray-400">Files Scanned</div>
-            </div>
-            <div className="bg-slate-800 rounded p-4 text-center">
-              <div className={`text-2xl font-bold text-purple-400 transition-all duration-1000 ${
-                animationPhase >= 2 ? 'scale-110' : ''
-              }`}>
-                {animationPhase >= 2 ? '89%' : '85%'}
-              </div>
-              <div className="text-sm text-gray-400">Security Score</div>
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            {animationPhase >= 1 && (
-              <div className={`flex items-center justify-between bg-slate-800 rounded p-3 transition-all duration-500 transform ${
-                animationPhase >= 1 ? 'translate-x-0 opacity-100' : 'translate-x-4 opacity-0'
-              }`}>
-                <div className="flex items-center space-x-3">
-                  <span className="text-gray-300">new-feature-branch</span>
-                  <span className="text-xs text-gray-500">2 min ago</span>
-                  <span className={`px-2 py-1 text-xs rounded transition-all duration-1000 ${
-                    animationPhase >= 2 ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
-                  }`}>
-                    {animationPhase >= 2 ? 'COMPLETED' : 'SCANNING'}
-                  </span>
-                </div>
-                <span className={`px-2 py-1 text-xs rounded transition-all duration-1000 ${
-                  animationPhase >= 2 ? 'bg-red-600/20 text-red-400' : 'bg-gray-600/20 text-gray-400'
-                }`}>
-                  {animationPhase >= 2 ? '3 keys' : '...'}
-                </span>
-              </div>
-            )}
-            
-            <div className="flex items-center justify-between bg-slate-800 rounded p-3">
-              <div className="flex items-center space-x-3">
-                <span className="text-gray-300">frontend-app</span>
-                <span className="text-xs text-gray-500">2 hours ago</span>
-              </div>
-              <span className="bg-red-600/20 text-red-400 px-2 py-1 text-xs rounded">3 keys</span>
-            </div>
-            <div className="flex items-center justify-between bg-slate-800 rounded p-3">
-              <div className="flex items-center space-x-3">
-                <span className="text-gray-300">api-server</span>
-                <span className="text-xs text-gray-500">1 day ago</span>
-              </div>
-              <span className="bg-yellow-600/20 text-yellow-400 px-2 py-1 text-xs rounded">1 key</span>
-            </div>
-            <div className="flex items-center justify-between bg-slate-800 rounded p-3">
-              <div className="flex items-center space-x-3">
-                <span className="text-gray-300">mobile-app</span>
-                <span className="text-xs text-gray-500">3 days ago</span>
-              </div>
-              <span className="bg-green-600/20 text-green-400 px-2 py-1 text-xs rounded">0 keys</span>
-            </div>
-          </div>
-        </div>
+      <span className="text-gray-400 text-sm">Terminal</span>
+      <div className="ml-auto flex items-center">
+        <div className="animate-pulse w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+        <span className="text-green-400 text-xs">LIVE DEMO</span>
       </div>
-
-      {/* Demo 2: Dashboard Overview */}
-      <div className={`absolute inset-0 transition-all duration-700 ease-in-out transform ${
-        currentDemo === 1 
-          ? 'translate-y-0 opacity-100' 
-          : currentDemo < 1 
-            ? 'translate-y-full opacity-0' 
-            : '-translate-y-full opacity-0'
-      }`}>
-        <div className="h-full">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-white">Dashboard Overview</h3>
-            <div className="flex items-center space-x-2">
-              <span className="text-blue-400 px-3 py-1 rounded text-sm border border-blue-500/30 cursor-default opacity-60">
-                New Scan
-              </span>
-              <div className="w-8 h-8 bg-slate-700 rounded-full flex items-center justify-center">
-                <span className="text-sm">JD</span>
-              </div>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-4 gap-4 mb-6">
-            <div className="bg-slate-800 rounded p-4 text-center">
-              <div className={`text-2xl font-bold text-blue-400 transition-all duration-1000 ${
-                animationPhase >= 1 ? 'scale-110' : ''
-              }`}>
-                {animationPhase >= 1 ? (animationPhase >= 2 ? '13' : '12') : '11'}
-              </div>
-              <div className="text-sm text-gray-400">Total Scans</div>
-            </div>
-            <div className="bg-slate-800 rounded p-4 text-center">
-              <div className={`text-2xl font-bold text-red-400 transition-all duration-1000 ${
-                animationPhase >= 1 ? 'scale-110' : ''
-              }`}>
-                {animationPhase >= 1 ? (animationPhase >= 2 ? '26' : '23') : '20'}
-              </div>
-              <div className="text-sm text-gray-400">Keys Found</div>
-            </div>
-            <div className="bg-slate-800 rounded p-4 text-center">
-              <div className={`text-2xl font-bold text-green-400 transition-all duration-1000 ${
-                animationPhase >= 1 ? 'scale-110' : ''
-              }`}>
-                {animationPhase >= 1 ? (animationPhase >= 2 ? '894' : '847') : '803'}
-              </div>
-              <div className="text-sm text-gray-400">Files Scanned</div>
-            </div>
-            <div className="bg-slate-800 rounded p-4 text-center">
-              <div className={`text-2xl font-bold text-purple-400 transition-all duration-1000 ${
-                animationPhase >= 2 ? 'scale-110' : ''
-              }`}>
-                {animationPhase >= 2 ? '89%' : '85%'}
-              </div>
-              <div className="text-sm text-gray-400">Security Score</div>
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            {animationPhase >= 1 && (
-              <div className={`flex items-center justify-between bg-slate-800 rounded p-3 transition-all duration-500 transform ${
-                animationPhase >= 1 ? 'translate-x-0 opacity-100' : 'translate-x-4 opacity-0'
-              }`}>
-                <div className="flex items-center space-x-3">
-                  <span className="text-gray-300">new-feature-branch</span>
-                  <span className="text-xs text-gray-500">2 min ago</span>
-                  <span className={`px-2 py-1 text-xs rounded transition-all duration-1000 ${
-                    animationPhase >= 2 ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
-                  }`}>
-                    {animationPhase >= 2 ? 'COMPLETED' : 'SCANNING'}
-                  </span>
-                </div>
-                <span className={`px-2 py-1 text-xs rounded transition-all duration-1000 ${
-                  animationPhase >= 2 ? 'bg-red-600/20 text-red-400' : 'bg-gray-600/20 text-gray-400'
-                }`}>
-                  {animationPhase >= 2 ? '3 keys' : '...'}
-                </span>
-              </div>
-            )}
-            
-            <div className="flex items-center justify-between bg-slate-800 rounded p-3">
-              <div className="flex items-center space-x-3">
-                <span className="text-gray-300">frontend-app</span>
-                <span className="text-xs text-gray-500">2 hours ago</span>
-              </div>
-              <span className="bg-red-600/20 text-red-400 px-2 py-1 text-xs rounded">3 keys</span>
-            </div>
-            <div className="flex items-center justify-between bg-slate-800 rounded p-3">
-              <div className="flex items-center space-x-3">
-                <span className="text-gray-300">api-server</span>
-                <span className="text-xs text-gray-500">1 day ago</span>
-              </div>
-              <span className="bg-yellow-600/20 text-yellow-400 px-2 py-1 text-xs rounded">1 key</span>
-            </div>
-            <div className="flex items-center justify-between bg-slate-800 rounded p-3">
-              <div className="flex items-center space-x-3">
-                <span className="text-gray-300">mobile-app</span>
-                <span className="text-xs text-gray-500">3 days ago</span>
-              </div>
-              <span className="bg-green-600/20 text-green-400 px-2 py-1 text-xs rounded">0 keys</span>
-            </div>
-          </div>
+    </div>
+    
+    <div className="font-mono text-sm space-y-1 h-full overflow-y-auto">
+      {terminalLines.map((line, index) => (
+        <div
+          key={index}
+          className={`transition-all duration-300 ${
+            line.type === 'command' ? 'text-green-400' :
+            line.type === 'error' ? 'text-red-400' :
+            line.type === 'warning' ? 'text-yellow-400' :
+            line.type === 'success' ? 'text-green-400' :
+            line.type === 'info' ? 'text-blue-400' :
+            line.type === 'summary' ? 'text-blue-400 font-semibold' :
+            line.type === 'recommendation' ? 'text-purple-400' :
+            line.type === 'location' ? 'text-gray-400 text-xs ml-4' :
+            line.type === 'file' ? 'text-gray-300' :
+            'text-gray-300'
+          }`}
+        >
+          {line.text === '' ? '\u00A0' : line.text}
         </div>
-      </div>
-
-      {/* Demo 3: Vault Storage */}
-      <div className={`absolute inset-0 transition-all duration-700 ease-in-out transform ${
-        currentDemo === 2 
-          ? 'translate-y-0 opacity-100' 
-          : currentDemo < 2 
-            ? 'translate-y-full opacity-0' 
-            : '-translate-y-full opacity-0'
-      }`}>
-        <div className="h-full">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-4">
-              <h3 className="text-lg font-semibold text-white">Vault Storage</h3>
-              <select className={`bg-slate-700 border border-gray-600 text-white rounded px-3 py-1 text-sm cursor-default transition-all duration-500 ${
-                animationPhase >= 1 ? 'ring-1 ring-blue-500/50' : ''
-              }`}>
-                <option>production</option>
-                <option>staging</option>
-                <option>development</option>
-              </select>
-            </div>
-            <span className={`text-blue-400 px-3 py-1 rounded text-sm border border-blue-500/30 cursor-default transition-all duration-500 ${
-              animationPhase >= 2 ? 'opacity-100' : 'opacity-60'
-            }`}>
-              + Add Key
-            </span>
-          </div>
-          
-          <div className="space-y-3">
-            {animationPhase >= 1 && (
-              <div className={`bg-slate-800 rounded p-4 transition-all duration-500 transform ${
-                animationPhase >= 1 ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'
-              }`}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-semibold text-white">NEW_STRIPE_KEY</div>
-                    <div className="text-sm text-gray-400">Just added • Never accessed</div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="bg-green-600/20 text-green-400 px-2 py-1 text-xs rounded">Active</span>
-                    <span className="text-gray-400 cursor-default">⋯</span>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            <div className="bg-slate-800 rounded p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-semibold text-white">STRIPE_SECRET_KEY</div>
-                  <div className={`text-sm text-gray-400 transition-all duration-500 ${
-                    animationPhase >= 3 ? 'text-green-400' : ''
-                  }`}>
-                    Added 2 days ago • Last accessed {animationPhase >= 3 ? 'just now' : '4 hours ago'}
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className="bg-green-600/20 text-green-400 px-2 py-1 text-xs rounded">Active</span>
-                  <span className="text-gray-400 cursor-default">⋯</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-slate-800 rounded p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-semibold text-white">AWS_ACCESS_KEY_ID</div>
-                  <div className="text-sm text-gray-400">Added 1 week ago • Last accessed 2 hours ago</div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className="bg-green-600/20 text-green-400 px-2 py-1 text-xs rounded">Active</span>
-                  <span className="text-gray-400 cursor-default">⋯</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-slate-800 rounded p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-semibold text-white">OPENAI_API_KEY</div>
-                  <div className="text-sm text-gray-400">Added 3 days ago • Last accessed 1 hour ago</div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className="bg-green-600/20 text-green-400 px-2 py-1 text-xs rounded">Active</span>
-                  <span className="text-gray-400 cursor-default">⋯</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div className="mt-6 text-center">
-            <p className={`text-sm text-gray-400 transition-all duration-500 ${
-              animationPhase >= 1 ? 'text-blue-400' : ''
-            }`}>
-              {animationPhase >= 1 ? '4 keys stored • AES-256 encrypted • Environment: production' : '3 keys stored • AES-256 encrypted • Environment: production'}
-            </p>
-          </div>
-        </div>
-      </div>
+      ))}
+      <div className="text-green-400 animate-pulse">█</div>
     </div>
   </div>
 </div>
+    </section>
+
+{/*  SECTION 2: Dashboard Results Demo */}
+<section className="py-20 bg-slate-800/30">
+  <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="text-center mb-16">
+      <h2 className="text-4xl font-bold mb-6">See Your Security Dashboard</h2>
+      <p className="text-xl text-gray-300">Track vulnerabilities and manage API keys across all your repositories</p>
+    </div>
+    
+    {/* Dashboard Demo Navigation */}
+    <div className="max-w-5xl mx-auto">
+      <div className="mb-8">
+        <div className="text-center mb-4">
+          <div className="inline-flex items-center space-x-8">
+            {demoTitles.map((title, index) => (
+              <div
+                key={index}
+                className={`relative px-2 py-1 text-sm transition-all duration-500 cursor-default ${
+                  currentDemo === index ? 'text-white' : 'text-gray-400'
+                }`}
+              >
+                {title}
+                {currentDemo === index && (
+                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-400 rounded transition-all duration-500"></div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
-      </section>
+      </div>
+
+      {/* Dashboard Demo Container */}
+      <div className="bg-gray-900 rounded-lg border border-gray-700 p-6 text-left overflow-hidden" style={{minHeight: '500px'}}>
+        <div className="relative h-full">
+          
+          {/* Demo 1: Scan Results */}
+          <div className={`absolute inset-0 transition-all duration-700 ease-in-out transform ${
+            currentDemo === 0 
+              ? 'translate-y-0 opacity-100' 
+              : currentDemo < 0 
+                ? 'translate-y-full opacity-0' 
+                : '-translate-y-full opacity-0'
+          }`}>
+           <div className="h-full">
+  <div className="flex items-center justify-between mb-6">
+    <div className="flex items-center">
+      <div className="flex space-x-2 mr-4">
+        <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+        <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+      </div>
+      <span className="text-gray-400 text-sm">myproject/frontend-app</span>
+    </div>
+    <div className={`px-2 py-1 text-xs rounded transition-all duration-1000 ${
+      animationPhase >= 2 
+        ? 'bg-green-500/20 text-green-400 border border-green-500/20' 
+        : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/20'
+    }`}>
+      {animationPhase >= 2 ? 'COMPLETED' : 'SCANNING...'}
+    </div>
+  </div>
+  
+  <div className="grid grid-cols-4 gap-4 mb-6">
+    <div className="bg-slate-800 rounded p-3 text-center">
+      <div className={`text-xl font-bold text-red-400 transition-all duration-1000 ${
+        animationPhase >= 1 ? 'scale-110' : ''
+      }`}>
+        {animationPhase >= 1 ? '3' : '0'}
+      </div>
+      <div className="text-xs text-gray-400">Keys Found</div>
+    </div>
+    <div className="bg-slate-800 rounded p-3 text-center">
+      <div className={`text-xl font-bold text-blue-400 transition-all duration-1000 ${
+        animationPhase >= 1 ? 'scale-110' : ''
+      }`}>
+        {animationPhase >= 1 ? '47' : '0'}
+      </div>
+      <div className="text-xs text-gray-400">Files Scanned</div>
+    </div>
+    <div className="bg-slate-800 rounded p-3 text-center">
+      <div className={`text-xl font-bold text-yellow-400 transition-all duration-1000 ${
+        animationPhase >= 1 ? 'scale-110' : ''
+      }`}>
+        {animationPhase >= 1 ? '2' : '0'}
+      </div>
+      <div className="text-xs text-gray-400">High Severity</div>
+    </div>
+    <div className="bg-slate-800 rounded p-3 text-center">
+      <div className={`text-xl font-bold text-green-400 transition-all duration-1000 ${
+        animationPhase >= 2 ? 'scale-110' : ''
+      }`}>
+        {animationPhase >= 2 ? '1.2s' : '...'}
+      </div>
+      <div className="text-xs text-gray-400">Scan Time</div>
+    </div>
+  </div>
+  
+  <div className="space-y-3">
+    <div className={`bg-red-900/30 border border-red-500/50 rounded p-4 transition-all duration-1000 transform ${
+      animationPhase >= 1 ? 'translate-x-0 opacity-100' : 'translate-x-4 opacity-0'
+    }`}>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center space-x-3">
+          <span className="bg-red-500 text-white px-2 py-1 text-xs rounded font-bold">HIGH</span>
+          <span className="text-white font-mono text-sm">src/config/payments.js</span>
+          <span className="text-red-400 text-xs">Line 12</span>
+        </div>
+        <span className={`text-blue-400 px-3 py-1 text-xs rounded border border-blue-500/30 cursor-default ${
+          animationPhase >= 3 ? 'opacity-100' : 'opacity-60'
+        }`}>
+          Store in Vault
+        </span>
+      </div>
+      <div className="text-xs text-gray-300 mb-2">Stripe Secret Key detected</div>
+      <div className="font-mono text-xs bg-black/30 p-2 rounded text-red-300">sk_live_51H***************</div>
+    </div>
+    
+    <div className={`bg-red-900/30 border border-red-500/50 rounded p-4 transition-all duration-1000 delay-300 transform ${
+      animationPhase >= 1 ? 'translate-x-0 opacity-100' : 'translate-x-4 opacity-0'
+    }`}>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center space-x-3">
+          <span className="bg-red-500 text-white px-2 py-1 text-xs rounded font-bold">HIGH</span>
+          <span className="text-white font-mono text-sm">config/aws.json</span>
+          <span className="text-red-400 text-xs">Line 3</span>
+        </div>
+        <span className={`text-blue-400 px-3 py-1 text-xs rounded border border-blue-500/30 cursor-default ${
+          animationPhase >= 3 ? 'opacity-100' : 'opacity-60'
+        }`}>
+          Store in Vault
+        </span>
+      </div>
+      <div className="text-xs text-gray-300 mb-2">AWS Access Key detected</div>
+      <div className="font-mono text-xs bg-black/30 p-2 rounded text-red-300">AKIA***************</div>
+    </div>
+    
+    <div className={`bg-yellow-900/30 border border-yellow-500/50 rounded p-4 transition-all duration-1000 delay-500 transform ${
+      animationPhase >= 1 ? 'translate-x-0 opacity-100' : 'translate-x-4 opacity-0'
+    }`}>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center space-x-3">
+          <span className="bg-yellow-500 text-black px-2 py-1 text-xs rounded font-bold">MED</span>
+          <span className="text-white font-mono text-sm">README.md</span>
+          <span className="text-yellow-400 text-xs">Line 23</span>
+        </div>
+        <span className="text-gray-500 px-3 py-1 text-xs rounded border border-gray-600/30 cursor-default opacity-60">
+          Ignore
+        </span>
+      </div>
+      <div className="text-xs text-gray-300 mb-2">OpenAI API Key in documentation</div>
+      <div className="font-mono text-xs bg-black/30 p-2 rounded text-yellow-300">sk-proj-***************</div>
+    </div>
+  </div>
+</div>
+          </div>
+
+          {/* Demo 2: Dashboard Overview */}
+          <div className={`absolute inset-0 transition-all duration-700 ease-in-out transform ${
+            currentDemo === 1 
+              ? 'translate-y-0 opacity-100' 
+              : currentDemo < 1 
+                ? 'translate-y-full opacity-0' 
+                : '-translate-y-full opacity-0'
+          }`}>
+           <div className="h-full">
+  <div className="flex items-center justify-between mb-6">
+    <h3 className="text-lg font-semibold text-white">Dashboard Overview</h3>
+    <div className="flex items-center space-x-2">
+      <span className="text-blue-400 px-3 py-1 rounded text-sm border border-blue-500/30 cursor-default opacity-60">
+        New Scan
+      </span>
+      <div className="w-8 h-8 bg-slate-700 rounded-full flex items-center justify-center">
+        <span className="text-sm">JD</span>
+      </div>
+    </div>
+  </div>
+  
+  <div className="grid grid-cols-4 gap-4 mb-6">
+    <div className="bg-slate-800 rounded p-4 text-center">
+      <div className={`text-2xl font-bold text-blue-400 transition-all duration-1000 ${
+        animationPhase >= 1 ? 'scale-110' : ''
+      }`}>
+        {animationPhase >= 1 ? (animationPhase >= 2 ? '13' : '12') : '11'}
+      </div>
+      <div className="text-sm text-gray-400">Total Scans</div>
+    </div>
+    <div className="bg-slate-800 rounded p-4 text-center">
+      <div className={`text-2xl font-bold text-red-400 transition-all duration-1000 ${
+        animationPhase >= 1 ? 'scale-110' : ''
+      }`}>
+        {animationPhase >= 1 ? (animationPhase >= 2 ? '26' : '23') : '20'}
+      </div>
+      <div className="text-sm text-gray-400">Keys Found</div>
+    </div>
+    <div className="bg-slate-800 rounded p-4 text-center">
+      <div className={`text-2xl font-bold text-green-400 transition-all duration-1000 ${
+        animationPhase >= 1 ? 'scale-110' : ''
+      }`}>
+        {animationPhase >= 1 ? (animationPhase >= 2 ? '894' : '847') : '803'}
+      </div>
+      <div className="text-sm text-gray-400">Files Scanned</div>
+    </div>
+    <div className="bg-slate-800 rounded p-4 text-center">
+      <div className={`text-2xl font-bold text-purple-400 transition-all duration-1000 ${
+        animationPhase >= 2 ? 'scale-110' : ''
+      }`}>
+        {animationPhase >= 2 ? '89%' : '85%'}
+      </div>
+      <div className="text-sm text-gray-400">Security Score</div>
+    </div>
+  </div>
+  
+  <div className="space-y-2">
+    {animationPhase >= 1 && (
+      <div className={`flex items-center justify-between bg-slate-800 rounded p-3 transition-all duration-500 transform ${
+        animationPhase >= 1 ? 'translate-x-0 opacity-100' : 'translate-x-4 opacity-0'
+      }`}>
+        <div className="flex items-center space-x-3">
+          <span className="text-gray-300">new-feature-branch</span>
+          <span className="text-xs text-gray-500">2 min ago</span>
+          <span className={`px-2 py-1 text-xs rounded transition-all duration-1000 ${
+            animationPhase >= 2 ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
+          }`}>
+            {animationPhase >= 2 ? 'COMPLETED' : 'SCANNING'}
+          </span>
+        </div>
+        <span className={`px-2 py-1 text-xs rounded transition-all duration-1000 ${
+          animationPhase >= 2 ? 'bg-red-600/20 text-red-400' : 'bg-gray-600/20 text-gray-400'
+        }`}>
+          {animationPhase >= 2 ? '3 keys' : '...'}
+        </span>
+      </div>
+    )}
+    
+    <div className="flex items-center justify-between bg-slate-800 rounded p-3">
+      <div className="flex items-center space-x-3">
+        <span className="text-gray-300">frontend-app</span>
+        <span className="text-xs text-gray-500">2 hours ago</span>
+      </div>
+      <span className="bg-red-600/20 text-red-400 px-2 py-1 text-xs rounded">3 keys</span>
+    </div>
+    <div className="flex items-center justify-between bg-slate-800 rounded p-3">
+      <div className="flex items-center space-x-3">
+        <span className="text-gray-300">api-server</span>
+        <span className="text-xs text-gray-500">1 day ago</span>
+      </div>
+      <span className="bg-yellow-600/20 text-yellow-400 px-2 py-1 text-xs rounded">1 key</span>
+    </div>
+    <div className="flex items-center justify-between bg-slate-800 rounded p-3">
+      <div className="flex items-center space-x-3">
+        <span className="text-gray-300">mobile-app</span>
+        <span className="text-xs text-gray-500">3 days ago</span>
+      </div>
+      <span className="bg-green-600/20 text-green-400 px-2 py-1 text-xs rounded">0 keys</span>
+    </div>
+  </div>
+</div>
+          </div>
+
+          {/* Demo 3: Vault Storage */}
+          <div className={`absolute inset-0 transition-all duration-700 ease-in-out transform ${
+            currentDemo === 2 
+              ? 'translate-y-0 opacity-100' 
+              : currentDemo < 2 
+                ? 'translate-y-full opacity-0' 
+                : '-translate-y-full opacity-0'
+          }`}>
+         <div className="h-full">
+  <div className="flex items-center justify-between mb-6">
+    <div className="flex items-center space-x-4">
+      <h3 className="text-lg font-semibold text-white">Vault Storage</h3>
+      <select className={`bg-slate-700 border border-gray-600 text-white rounded px-3 py-1 text-sm cursor-default transition-all duration-500 ${
+        animationPhase >= 1 ? 'ring-1 ring-blue-500/50' : ''
+      }`}>
+        <option>production</option>
+        <option>staging</option>
+        <option>development</option>
+      </select>
+    </div>
+    <span className={`text-blue-400 px-3 py-1 rounded text-sm border border-blue-500/30 cursor-default transition-all duration-500 ${
+      animationPhase >= 2 ? 'opacity-100' : 'opacity-60'
+    }`}>
+      + Add Key
+    </span>
+  </div>
+  
+  <div className="space-y-3">
+    {animationPhase >= 1 && (
+      <div className={`bg-slate-800 rounded p-4 transition-all duration-500 transform ${
+        animationPhase >= 1 ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'
+      }`}>
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="font-semibold text-white">NEW_STRIPE_KEY</div>
+            <div className="text-sm text-gray-400">Just added • Never accessed</div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="bg-green-600/20 text-green-400 px-2 py-1 text-xs rounded">Active</span>
+            <span className="text-gray-400 cursor-default">⋯</span>
+          </div>
+        </div>
+      </div>
+    )}
+    
+    <div className="bg-slate-800 rounded p-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="font-semibold text-white">STRIPE_SECRET_KEY</div>
+          <div className={`text-sm text-gray-400 transition-all duration-500 ${
+            animationPhase >= 3 ? 'text-green-400' : ''
+          }`}>
+            Added 2 days ago • Last accessed {animationPhase >= 3 ? 'just now' : '4 hours ago'}
+          </div>
+        </div>
+        <div className="flex items-center space-x-2">
+          <span className="bg-green-600/20 text-green-400 px-2 py-1 text-xs rounded">Active</span>
+          <span className="text-gray-400 cursor-default">⋯</span>
+        </div>
+      </div>
+    </div>
+    
+    <div className="bg-slate-800 rounded p-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="font-semibold text-white">AWS_ACCESS_KEY_ID</div>
+          <div className="text-sm text-gray-400">Added 1 week ago • Last accessed 2 hours ago</div>
+        </div>
+        <div className="flex items-center space-x-2">
+          <span className="bg-green-600/20 text-green-400 px-2 py-1 text-xs rounded">Active</span>
+          <span className="text-gray-400 cursor-default">⋯</span>
+        </div>
+      </div>
+    </div>
+    
+    <div className="bg-slate-800 rounded p-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="font-semibold text-white">OPENAI_API_KEY</div>
+          <div className="text-sm text-gray-400">Added 3 days ago • Last accessed 1 hour ago</div>
+        </div>
+        <div className="flex items-center space-x-2">
+          <span className="bg-green-600/20 text-green-400 px-2 py-1 text-xs rounded">Active</span>
+          <span className="text-gray-400 cursor-default">⋯</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div className="mt-6 text-center">
+    <p className={`text-sm text-gray-400 transition-all duration-500 ${
+      animationPhase >= 1 ? 'text-blue-400' : ''
+    }`}>
+      {animationPhase >= 1 ? '4 keys stored • AES-256 encrypted • Environment: production' : '3 keys stored • AES-256 encrypted • Environment: production'}
+    </p>
+  </div>
+</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
 
       {/* Problem Section */}
       <section className="py-20 bg-slate-800/50">
