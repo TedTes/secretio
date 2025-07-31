@@ -72,7 +72,7 @@ export default function Home() {
     startTerminalDemo(); // Start immediately
     
     // Restart terminal demo every 15 seconds
-    const interval = setInterval(startTerminalDemo, 10000);
+    const interval = setInterval(startTerminalDemo, 15000);
     return () => clearInterval(interval);
   }, []);
 
@@ -180,7 +180,7 @@ export default function Home() {
   </div>
 
   {/* TERMINAL DEMO - Auto-running */}
-  <div className="bg-gray-900 rounded-lg border border-gray-700 p-6 max-w-4xl mx-auto text-left" style={{minHeight: '400px'}}>
+  <div className="bg-gray-900 rounded-lg border border-gray-700 p-6 max-w-4xl mx-auto text-left" style={{height: '530px'}}>
     <div className="flex items-center mb-4">
       <div className="flex space-x-2 mr-4">
         <div className="w-3 h-3 bg-red-500 rounded-full"></div>
