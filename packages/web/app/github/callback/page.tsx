@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState,Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { apiClient } from '../../lib/api';
 
-export default function GitHubCallbackPage() {
+function GitHubCallbackClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
@@ -32,7 +32,7 @@ export default function GitHubCallbackPage() {
 
         if(!code || state !== 'repo-access') {
             setStatus('error');
-           let message =  !code ? 'No authorization code received' : 'Invalid OAuth state';
+            const message =  !code ? 'No authorization code received' : 'Invalid OAuth state';
            setMessage(message);
            setTimeout(() => {
             router.push('/scan/new');
@@ -86,6 +86,7 @@ export default function GitHubCallbackPage() {
   }, [router, searchParams]);
 
   return (
+    
     <div className="min-h-screen bg-slate-900 flex items-center justify-center">
       <div className="max-w-md w-full mx-4">
         <div className="bg-slate-800 rounded-lg border border-gray-700 p-8 text-center">
@@ -132,5 +133,13 @@ export default function GitHubCallbackPage() {
         </div>
       </div>
     </div>
+
+  );
+}
+export default function GitHubCallbackPage() {
+  return (
+    <Suspense fallback={<div>Loading GitHub callback...</div>}>
+      <GitHubCallbackClient />
+    </Suspense>
   );
 }

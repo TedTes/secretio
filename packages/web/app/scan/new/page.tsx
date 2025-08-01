@@ -1,16 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect,Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../lib/api';
 import UserMenu from '../../components/auth/UserMenu';
 import {GitHubUser, GitHubRepo, GitHubBranch} from "../../lib/types";
 
-export default function NewScanPage() {
+ function NewScanPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   
   const [githubUser, setGithubUser] = useState<GitHubUser | null>(null);
   const [repos, setRepos] = useState<GitHubRepo[]>([]);
@@ -138,23 +138,12 @@ export default function NewScanPage() {
       const oauthUrl = apiClient.getRepoAccessURL();
       window.location.href = oauthUrl;
     } catch (err) {
+      console.log("handleGithubconnect error", err)
       setError('Failed to initiate GitHub connection. Please try again.');
     }
   };
 
-  const handleGitHubDisconnect = async () => {
-    try {
-      await apiClient.disconnect();
-      setGithubUser(null);
-      setRepos([]);
-      setSelectedRepo(null);
-      setBranches([]);
-      setSuccess('GitHub disconnected successfully');
-      setTimeout(() => setSuccess(null), 3000);
-    } catch (err) {
-      setError('Failed to disconnect GitHub');
-    }
-  };
+
 
   const handleRepoSelect = (repo: GitHubRepo) => {
     setSelectedRepo(repo);
@@ -232,6 +221,7 @@ export default function NewScanPage() {
   }
 
   return (
+
     <div className="min-h-screen bg-slate-900">
       {/* Navigation */}
       <nav className="bg-slate-900 border-b border-gray-800">
@@ -252,14 +242,14 @@ export default function NewScanPage() {
             <div className="flex items-center space-x-4">
               {githubUser && (
                 <div className="flex items-center space-x-2">
-                  <img 
+                  {/* <img 
                     src={githubUser.avatar_url} 
                     alt={githubUser.name || githubUser.login}
                     className="w-6 h-6 rounded-full"
-                  />
-                  <span className="text-sm text-gray-300 hidden md:block">
+                  /> */}
+                  {/* <span className="text-sm text-gray-300 hidden md:block">
                     {githubUser.name || githubUser.login}
-                  </span>
+                  </span> */}
                 </div>
               )}
               <UserMenu />
@@ -596,5 +586,13 @@ export default function NewScanPage() {
         )}
       </div>
     </div>
+
+  );
+}
+export default function NewScanPage() {
+  return (
+    <Suspense fallback={<div>Loading GitHub callback...</div>}>
+      <NewScanPageClient />
+    </Suspense>
   );
 }
