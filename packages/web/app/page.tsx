@@ -3,14 +3,10 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from './contexts/AuthContext';
-import LoginModal from './components/auth/LoginModal';
-import RegisterModal from './components/auth/RegisterModal';
 import UserMenu from './components/auth/UserMenu';
 
 export default function Home() {
-  const [scanStatus, setScanStatus] = useState('')
   const [currentDemo, setCurrentDemo] = useState(0);
-  const [demoActive, setDemoActive] = useState(false);
   const [terminalLines, setTerminalLines] = useState<Array<{text: string; delay: number; type: string}>>([]);
   const [animationPhase, setAnimationPhase] = useState(0);
   
@@ -93,25 +89,6 @@ export default function Home() {
   
 
 
-  const handleScanClick = () => {
-    if (demoActive) return;
-    
-    setDemoActive(true);
-    setTerminalLines([]);
-    setCurrentDemo(0);
-    setAnimationPhase(0);
-    setScanStatus('🔍 Running live demo...');
-    
-    runTerminalDemo();
-    
-    setTimeout(() => {
-      setScanStatus('✅ Try with your repos!');
-    }, 7000);
-    
-    setTimeout(() => {
-      setScanStatus('');
-    }, 10000);
-  };
   const demoTitles = ['Scan Results', 'Dashboard Overview', 'Vault Storage'];
 
   return (
@@ -165,22 +142,25 @@ export default function Home() {
   </p>
   
   <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
-    <button 
-      onClick={handleScanClick}
-      className="bg-blue-600 hover:bg-blue-700 px-8 py-4 rounded-lg font-semibold text-lg transition-all transform hover:scale-105"
-    >
-      {scanStatus || 'Try Live Demo'}
-    </button>
-    <button 
-      onClick={() => isAuthenticated ? window.location.href = '/dashboard' : router.push('/login')}
-      className="border border-gray-600 hover:border-gray-400 px-8 py-4 rounded-lg font-semibold text-lg transition-colors"
-    >
-      Start Clean
-    </button>
-  </div>
+  <button 
+    onClick={() => router.push('/login')}
+    className="bg-blue-600 hover:bg-blue-700 px-8 py-4 rounded-lg font-semibold text-lg transition-all transform hover:scale-105"
+  >
+    Start Scanning Free
+  </button>
+  <button 
+    onClick={() => {
+      document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
+    }}
+    className="border border-gray-600 hover:border-gray-400 px-8 py-4 rounded-lg font-semibold text-lg transition-colors"
+  >
+    Learn More
+  </button>
+</div>
+
 
   {/* TERMINAL DEMO - Auto-running */}
-  <div className="bg-gray-900 rounded-lg border border-gray-700 p-6 max-w-4xl mx-auto text-left" style={{height: '530px'}}>
+  <div className="bg-gray-900 rounded-lg border border-gray-700 p-6 max-w-4xl mx-auto text-left" style={{height: '550px'}}>
     <div className="flex items-center mb-4">
       <div className="flex space-x-2 mr-4">
         <div className="w-3 h-3 bg-red-500 rounded-full"></div>
@@ -221,7 +201,6 @@ export default function Home() {
     </section>
 
 {/*  SECTION 2: Dashboard Results Demo */}
-{/* SECTION 2: Dashboard Results Demo with Smooth Roll Transitions */}
 <section className="py-20 bg-slate-800/30">
   <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
     <div className="text-center mb-16">
@@ -479,109 +458,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Demo 2: Dashboard Overview */}
-          <div className={`absolute inset-0 transition-all duration-700 ease-in-out transform ${
-            currentDemo === 1 
-              ? 'translate-y-0 opacity-100' 
-              : currentDemo > 1 
-                ? '-translate-y-full opacity-0' 
-                : 'translate-y-full opacity-0'
-          }`}>
-            <div className="h-full">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-white">Dashboard Overview</h3>
-                <div className="flex items-center space-x-2">
-                  <span className="text-blue-400 px-3 py-1 rounded text-sm border border-blue-500/30 cursor-default opacity-60">
-                    New Scan
-                  </span>
-                  <div className="w-8 h-8 bg-slate-700 rounded-full flex items-center justify-center">
-                    <span className="text-sm">JD</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-4 gap-4 mb-6">
-                <div className="bg-slate-800 rounded p-4 text-center">
-                  <div className={`text-2xl font-bold text-blue-400 transition-all duration-1000 ${
-                    animationPhase >= 1 ? 'scale-110' : ''
-                  }`}>
-                    {animationPhase >= 1 ? (animationPhase >= 2 ? '13' : '12') : '11'}
-                  </div>
-                  <div className="text-sm text-gray-400">Total Scans</div>
-                </div>
-                <div className="bg-slate-800 rounded p-4 text-center">
-                  <div className={`text-2xl font-bold text-red-400 transition-all duration-1000 ${
-                    animationPhase >= 1 ? 'scale-110' : ''
-                  }`}>
-                    {animationPhase >= 1 ? (animationPhase >= 2 ? '26' : '23') : '20'}
-                  </div>
-                  <div className="text-sm text-gray-400">Keys Found</div>
-                </div>
-                <div className="bg-slate-800 rounded p-4 text-center">
-                  <div className={`text-2xl font-bold text-green-400 transition-all duration-1000 ${
-                    animationPhase >= 1 ? 'scale-110' : ''
-                  }`}>
-                    {animationPhase >= 1 ? (animationPhase >= 2 ? '894' : '847') : '803'}
-                  </div>
-                  <div className="text-sm text-gray-400">Files Scanned</div>
-                </div>
-                <div className="bg-slate-800 rounded p-4 text-center">
-                  <div className={`text-2xl font-bold text-purple-400 transition-all duration-1000 ${
-                    animationPhase >= 2 ? 'scale-110' : ''
-                  }`}>
-                    {animationPhase >= 2 ? '89%' : '85%'}
-                  </div>
-                  <div className="text-sm text-gray-400">Security Score</div>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                {animationPhase >= 1 && (
-                  <div className={`flex items-center justify-between bg-slate-800 rounded p-3 transition-all duration-500 transform ${
-                    animationPhase >= 1 ? 'translate-x-0 opacity-100' : 'translate-x-4 opacity-0'
-                  }`}>
-                    <div className="flex items-center space-x-3">
-                      <span className="text-gray-300">new-feature-branch</span>
-                      <span className="text-xs text-gray-500">2 min ago</span>
-                      <span className={`px-2 py-1 text-xs rounded transition-all duration-1000 ${
-                        animationPhase >= 2 ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
-                      }`}>
-                        {animationPhase >= 2 ? 'COMPLETED' : 'SCANNING'}
-                      </span>
-                    </div>
-                    <span className={`px-2 py-1 text-xs rounded transition-all duration-1000 ${
-                      animationPhase >= 2 ? 'bg-red-600/20 text-red-400' : 'bg-gray-600/20 text-gray-400'
-                    }`}>
-                      {animationPhase >= 2 ? '3 keys' : '...'}
-                    </span>
-                  </div>
-                )}
-                
-                <div className="flex items-center justify-between bg-slate-800 rounded p-3">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-gray-300">frontend-app</span>
-                    <span className="text-xs text-gray-500">2 hours ago</span>
-                  </div>
-                  <span className="bg-red-600/20 text-red-400 px-2 py-1 text-xs rounded">3 keys</span>
-                </div>
-                <div className="flex items-center justify-between bg-slate-800 rounded p-3">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-gray-300">api-server</span>
-                    <span className="text-xs text-gray-500">1 day ago</span>
-                  </div>
-                  <span className="bg-yellow-600/20 text-yellow-400 px-2 py-1 text-xs rounded">1 key</span>
-                </div>
-                <div className="flex items-center justify-between bg-slate-800 rounded p-3">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-gray-300">mobile-app</span>
-                    <span className="text-xs text-gray-500">3 days ago</span>
-                  </div>
-                  <span className="bg-green-600/20 text-green-400 px-2 py-1 text-xs rounded">0 keys</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* Demo 3: Vault Storage */}
           <div className={`absolute inset-0 transition-all duration-700 ease-in-out transform ${
             currentDemo === 2 
@@ -686,6 +562,7 @@ export default function Home() {
 
 
 
+
       {/* Problem Section */}
       <section className="py-20 bg-slate-800/50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -757,20 +634,19 @@ export default function Home() {
             </div>
             
             <div>
-              <h3 className="text-2xl font-bold mb-6 flex items-center">
-                🔐 <span className="ml-3">Basic Vault Storage</span>
-                <span className="ml-2 bg-blue-600/20 text-blue-400 px-2 py-1 text-xs rounded">BETA</span>
-              </h3>
-              <p className="text-gray-300 mb-6">
-                Store API keys securely with environment separation. 
-                CLI integration for retrieving keys without hardcoding them in your source code.
-              </p>
-              <div className="bg-gray-900 rounded-lg p-4 font-mono text-sm">
-                <div className="text-green-400">$ secretio vault store stripe_key</div>
-                <div className="text-green-400">$ secretio vault get stripe_key</div>
-                <div className="text-gray-300">Environment: production</div>
-              </div>
-            </div>
+  <h3 className="text-2xl font-bold mb-6 flex items-center">
+    🔐 <span className="ml-3">Secure Vault Storage</span>
+  </h3>
+  <p className="text-gray-300 mb-6">
+    Store API keys securely with AES-256 encryption and environment separation. 
+    CLI and SDK integration for retrieving keys without hardcoding them in your source code.
+  </p>
+  <div className="bg-gray-900 rounded-lg p-4 font-mono text-sm">
+    <div className="text-green-400">$ secretio vault store stripe_key</div>
+    <div className="text-green-400">$ secretio vault get stripe_key</div>
+    <div className="text-gray-300">✅ Encrypted & stored securely</div>
+  </div>
+</div>
             
             <div>
               <h3 className="text-2xl font-bold mb-6 flex items-center">
@@ -872,38 +748,41 @@ export default function Home() {
                 </li>
               </ul>
               <button 
-                onClick={handleScanClick}
-                className="w-full bg-green-600 hover:bg-green-700 py-3 rounded-lg transition-colors font-semibold"
-              >
-                Try Live Demo
-              </button>
+  onClick={() => router.push('/login')}
+  className="w-full bg-green-600 hover:bg-green-700 py-3 rounded-lg transition-colors font-semibold"
+>
+  Start Free Scanning
+</button>
             </div>
             
             {/* Pro Tier */}
             <div className="bg-slate-900 border border-gray-700 rounded-lg p-8">
-              <h3 className="text-2xl font-bold mb-2">Pro Vault</h3>
-              <div className="text-4xl font-bold mb-6">$15<span className="text-lg text-gray-400">/user/month</span></div>
-              <ul className="space-y-3 mb-8">
-                <li className="flex items-center">
-                  <span className="text-green-400 mr-2">✓</span> Everything in Free
-                </li>
-                <li className="flex items-center">
-                  <span className="text-blue-400 mr-2">○</span> Encrypted vault storage
-                </li>
-                <li className="flex items-center">
-                  <span className="text-blue-400 mr-2">○</span> API access for apps
-                </li>
-                <li className="flex items-center">
-                  <span className="text-gray-400 mr-2">○</span> Key rotation (coming)
-                </li>
-                <li className="flex items-center">
-                  <span className="text-gray-400 mr-2">○</span> Team features (coming)
-                </li>
-              </ul>
-              <button className="w-full border border-gray-600 hover:border-gray-400 py-3 rounded-lg transition-colors">
-                Join Waitlist
-              </button>
-            </div>
+  <h3 className="text-2xl font-bold mb-2">Pro Vault</h3>
+  <div className="text-4xl font-bold mb-6">$15<span className="text-lg text-gray-400">/user/month</span></div>
+  <ul className="space-y-3 mb-8">
+    <li className="flex items-center">
+      <span className="text-green-400 mr-2">✓</span> Everything in Free
+    </li>
+    <li className="flex items-center">
+      <span className="text-green-400 mr-2">✓</span> Encrypted vault storage
+    </li>
+    <li className="flex items-center">
+      <span className="text-green-400 mr-2">✓</span> API access for apps
+    </li>
+    <li className="flex items-center">
+      <span className="text-gray-400 mr-2">○</span> Key rotation (coming)
+    </li>
+    <li className="flex items-center">
+      <span className="text-gray-400 mr-2">○</span> Team features (coming)
+    </li>
+  </ul>
+  <button 
+    onClick={() => router.push('/login')}
+    className="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-lg transition-colors font-semibold"
+  >
+    Start Pro Trial
+  </button>
+</div>
             
             {/* Enterprise Tier */}
             <div className="bg-slate-900 border border-gray-700 rounded-lg p-8">
@@ -926,17 +805,22 @@ export default function Home() {
                   <span className="text-gray-400 mr-2">○</span> Dedicated support
                 </li>
               </ul>
-              <button className="w-full border border-gray-600 hover:border-gray-400 py-3 rounded-lg transition-colors">
-                Contact Us
-              </button>
+              <button 
+  onClick={() => {
+    window.location.href = 'mailto:hello@secretio.com?subject=Enterprise%20Inquiry&body=I%27m%20interested%20in%20learning%20more%20about%20Secretio%20Enterprise.';
+  }}
+  className="w-full border border-gray-600 hover:border-gray-400 py-3 rounded-lg transition-colors"
+>
+  Contact us
+</button>
             </div>
           </div>
           
           <div className="text-center mt-12">
-            <p className="text-gray-400 text-sm">
-              • ✓ = Available now • ○ = In development • ○ = Planned feature
-            </p>
-          </div>
+  <p className="text-gray-400 text-sm">
+    • ✓ = Available now • ○ = Coming soon
+  </p>
+</div>
         </div>
       </section>
 
@@ -949,19 +833,22 @@ export default function Home() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button 
-              onClick={handleScanClick}
-              className="bg-blue-600 hover:bg-blue-700 px-8 py-4 rounded-lg font-semibold text-lg transition-all transform hover:scale-105"
-            >
-              Try Live Demo
-            </button>
-            <button 
-              onClick={() => router.push("/login")}
-              className="border border-gray-600 hover:border-gray-400 px-8 py-4 rounded-lg font-semibold text-lg transition-colors"
-            >
-              Create Account
-            </button>
-          </div>
+  <button 
+    onClick={() => router.push('/login')}
+    className="bg-blue-600 hover:bg-blue-700 px-8 py-4 rounded-lg font-semibold text-lg transition-all transform hover:scale-105"
+  >
+    Get Started Free
+  </button>
+  <button 
+    onClick={() => {
+      document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
+    }}
+    className="border border-gray-600 hover:border-gray-400 px-8 py-4 rounded-lg font-semibold text-lg transition-colors"
+  >
+    View Pricing
+  </button>
+</div>
+
           
           <p className="text-gray-400 mt-8">Free to try. No credit card required.</p>
         </div>
