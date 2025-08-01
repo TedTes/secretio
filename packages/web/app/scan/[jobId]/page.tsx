@@ -26,7 +26,7 @@ interface ScanResultsData {
 export default function ScanResultsPage() {
   const params = useParams();
   const router = useRouter();
-  const { user, isAuthenticated } = useAuth();
+  const {  isAuthenticated } = useAuth();
   const jobId = params.jobId as string;
 
   const [job, setJob] = useState<ScanJob | null>(null);
@@ -827,7 +827,7 @@ export default function ScanResultsPage() {
               <h4 className="font-bold text-blue-400 mb-3">🚀 Next steps:</h4>
               <ul className="text-sm text-gray-300 space-y-2">
                 <li>• Replace hardcoded keys in your source code</li>
-                <li>• Use <code className="bg-slate-700 px-1 rounded">vault.getKey('{lastStoredKey.keyName}')</code></li>
+                <li>• Use <code className="bg-slate-700 px-1 rounded">vault.getKey(&rsquo;{lastStoredKey.keyName}&rsquo;)</code></li>
                 <li>• Set up your VAULT_TOKEN environment variable</li>
                 <li>• Deploy your secure application</li>
               </ul>
@@ -877,7 +877,7 @@ export default function ScanResultsPage() {
             </div>
             <h3 className="text-2xl font-bold text-white mb-3">🎊 Repository Secured!</h3>
             <p className="text-gray-300 mb-4">
-              Congratulations! You've successfully secured <strong>{storedKeys.size}</strong> API keys. 
+              Congratulations! You&rsquo;ve successfully secured <strong>{storedKeys.size}</strong> API keys. 
               Your repository is now free of exposed credentials.
             </p>
             

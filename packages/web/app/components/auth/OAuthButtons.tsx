@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import Button from '../ui/Button';
 
 export default function OAuthButtons() {
-  const { loginWithOAuth, isLoading } = useAuth();
+  const { loginWithOAuth } = useAuth();
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
 
   const handleOAuth = async (provider: 'google' | 'github') => {
@@ -12,6 +12,8 @@ export default function OAuthButtons() {
     try {
       await loginWithOAuth(provider);
     } catch (error) {
+
+      console.log('handleOAuth error',error);
       setLoadingProvider(null); // Reset on error
     }
   };

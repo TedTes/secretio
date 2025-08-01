@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useUserJobs, useUserStats } from '../hooks/useApi';
 import UserMenu from '../components/auth/UserMenu';
-
+import {ScanJob} from "../lib/types";
 type UserStats = {
   totalScans: number;
   totalKeysFound: number;
@@ -13,7 +13,7 @@ type UserStats = {
 };
 
 export default function Dashboard() {
-  const { user, isAuthenticated, isLoading,isLoggingOut } = useAuth();
+  const { isAuthenticated, isLoading,isLoggingOut } = useAuth();
   const router = useRouter();
   
   // API hooks for user data
@@ -59,48 +59,6 @@ export default function Dashboard() {
     return statusColors[status as keyof typeof statusColors] || statusColors.default;
   };
 
-  const getServiceIcon = (service: string) => {
-    const icons = {
-      stripe_secret: '💳',
-      stripe_publishable: '💳',
-      aws_access_key: '☁️',
-      aws_secret_key: '☁️',
-      openai: '🤖',
-      github_token: '🐙',
-      github_oauth: '🐙',
-      sendgrid: '📧',
-      google_api: '🔍',
-      slack_token: '💬',
-      discord_webhook: '🎮',
-      firebase: '🔥',
-      mailgun: '📬',
-      twilio_sid: '📱',
-      twilio_auth: '📱'
-    };
-    
-    return icons[service as keyof typeof icons] || '🔑';
-  };
-  const getServiceName = (service: string) => {
-    const names = {
-      stripe_secret: 'Stripe',
-      stripe_publishable: 'Stripe',
-      aws_access_key: 'AWS',
-      aws_secret_key: 'AWS',
-      openai: 'OpenAI',
-      github_token: 'GitHub',
-      github_oauth: 'GitHub',
-      sendgrid: 'SendGrid',
-      google_api: 'Google',
-      slack_token: 'Slack',
-      discord_webhook: 'Discord',
-      firebase: 'Firebase',
-      mailgun: 'Mailgun',
-      twilio_sid: 'Twilio',
-      twilio_auth: 'Twilio'
-    };
-    
-    return names[service as keyof typeof names] || 'API Key';
-  };
   
   useEffect(() => {
     if (isAuthenticated) {
@@ -365,7 +323,7 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="space-y-3">
-                {recentJobs.map((job: any) => (
+                {recentJobs.map((job: ScanJob) => (
                   <div key={job.id} className="flex items-center justify-between p-4 bg-slate-700 rounded-lg hover:bg-slate-650 transition-colors">
                     <div className="flex items-center space-x-3">
                       <div className={`w-3 h-3 rounded-full ${getStatusDotColor(job.status, job.keysFound)}`}></div>

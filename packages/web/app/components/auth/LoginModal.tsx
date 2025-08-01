@@ -105,7 +105,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
             onClick={onSwitchToRegister}
             className="text-blue-400 hover:text-blue-300 text-sm transition-colors"
           >
-            Don&apos;'t have an account? Sign up
+            Don&apos;t have an account? Sign up
           </button>
         </div>
       </form>

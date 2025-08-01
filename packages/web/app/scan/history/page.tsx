@@ -10,13 +10,13 @@ import { useToast } from '../../hooks/useToast'
 import UserMenu from '../../components/auth/UserMenu'; 
 export default function ScanHistoryPage() {
   const router = useRouter();
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const { toasts, showSuccess, showError, hideToast } = useToast();
   const [jobs, setJobs] = useState<ScanJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'date' | 'status' | 'repository'>('date');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'completed' | 'failed' | 'running'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'completed' | 'failed' | 'running' | 'pending'>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [deletingScans, setDeletingScans] = useState(new Set<string>());
@@ -256,7 +256,7 @@ const paginatedJobs = () => {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Filter by Status</label>
                 <select
                   value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value as any)}
+                  onChange={(e:React.ChangeEvent<HTMLSelectElement>) => setFilterStatus(e.target.value as "all" | "completed" | "failed" | "running" | "pending")}
                   className="bg-slate-700 border border-gray-600 text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="all">All Statuses</option>
@@ -272,7 +272,7 @@ const paginatedJobs = () => {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Sort by</label>
                 <select
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
+                  onChange={(e) => setSortBy(e.target.value as 'date' | 'status' | 'repository')}
                   className="bg-slate-700 border border-gray-600 text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="date">Date</option>

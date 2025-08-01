@@ -17,7 +17,7 @@ interface VaultKey {
 
 export default function VaultPage() {
   const router = useRouter();
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [keys, setKeys] = useState<VaultKey[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
