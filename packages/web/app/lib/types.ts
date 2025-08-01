@@ -8,7 +8,15 @@ export interface User {
     subscription: {status: 'active' | 'inactive'}
   }
 
-
+  export interface ScanStats {
+    files_scanned: number;           
+    keys_found: number;              
+    high_severity: number;           
+    medium_severity: number; 
+    low_severity: number; 
+    total_files?: number;            // Added for progress tracking
+    duration_ms?: number;            // Added for performance metrics
+  }
 export interface IVaultKey {
   keys:[];
   environment:string;

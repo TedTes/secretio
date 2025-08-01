@@ -10,7 +10,8 @@ import {
   GitHubUser,
   GitHubBranch,
   GitHubConnectionStatus,
-  IVaultKey
+  IVaultKey,
+  ScanStats
 } from "./types"
 
 class ApiClient {
@@ -270,8 +271,8 @@ class ApiClient {
       return response.data;
     }
   
-    async getScanResults(jobId: string): Promise<{ results: ScanResult[]; stats: any }> {
-      const response = await this.request<{ results: ScanResult[]; stats: any }>(`/api/jobs/results/${jobId}`);
+    async getScanResults(jobId: string): Promise<{ results: ScanResult[]; stats:   ScanStats }> {
+      const response = await this.request<{ results: ScanResult[]; stats:   ScanStats }>(`/api/jobs/results/${jobId}`);
       
       if (!response.success || !response.data) {
         throw new Error('Failed to get scan results');
@@ -454,13 +455,13 @@ class ApiClient {
     service: string;
     value: string;
     environment: string;
-  }): Promise<any> {
+  }): Promise<ApiResponse> {
     const response =  await this.request('/api/vault/keys',
       {
         method: 'POST',
         body: JSON.stringify(request)
       }
-    );
+    ) as ApiResponse;
     return response;
   }
   }
