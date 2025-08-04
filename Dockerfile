@@ -34,10 +34,10 @@ RUN npm run build
 WORKDIR /app
 COPY packages/vault-api ./packages/vault-api
 
-# Create a symlink for the shared package so vault-api can find it
+# Update vault-api tsconfig to point to built shared package instead of source
 WORKDIR /app/packages/vault-api
-RUN mkdir -p node_modules/@secretio && \
-    ln -sf ../../shared node_modules/@secretio/shared
+RUN sed -i 's|"@secretio/shared": \["../shared/src/index"\]|"@secretio/shared": ["../shared/dist/index"]|g' tsconfig.json && \
+    sed -i 's|"@secretio/shared/\*": \["../shared/src/\*"\]|"@secretio/shared/*": ["../shared/dist/*"]|g' tsconfig.json
 
 # Build vault-api
 RUN npm run build
