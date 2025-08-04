@@ -1,8 +1,10 @@
 # Build stage
 FROM node:18-alpine AS builder
 
-# Set working directory
 WORKDIR /app
+
+# Copy root tsconfig.json first (needed by all packages)
+COPY tsconfig.json ./tsconfig.json
 
 # Copy shared package first
 COPY packages/shared ./packages/shared
@@ -34,7 +36,10 @@ COPY --from=builder /app/packages/vault-api/dist ./dist
 COPY --from=builder /app/packages/vault-api/package.json ./package.json
 COPY --from=builder /app/packages/vault-api/node_modules ./node_modules
 
-# Expose port
+# Set working directory for runtime
+WORKDIR /app
+
+# Expose port (Railway will set PORT env var)
 EXPOSE 8080
 
 # Start the application
