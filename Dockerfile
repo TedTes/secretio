@@ -1,3 +1,4 @@
+
 # Stage 1: Build stage
 FROM node:18-alpine AS builder
 
@@ -30,12 +31,18 @@ COPY packages/shared ./packages/shared
 WORKDIR /app/packages/shared
 RUN npm run build
 
+# Pack the shared package as a tarball
+RUN npm pack
+
 # Copy vault-api source  
 WORKDIR /app
 COPY packages/vault-api ./packages/vault-api
 
-# Update vault-api tsconfig to point to built shared package instead of source
+# Install the shared package from the tarball in vault-api
 WORKDIR /app/packages/vault-api
+RUN npm install ../shared/secretio-shared-0.1.0.tgz
+
+# Update vault-api tsconfig to point to built shared package instead of source
 RUN sed -i 's|"@secretio/shared": \["../shared/src/index"\]|"@secretio/shared": ["../shared/dist/index"]|g' tsconfig.json && \
     sed -i 's|"@secretio/shared/\*": \["../shared/src/\*"\]|"@secretio/shared/*": ["../shared/dist/*"]|g' tsconfig.json
 
@@ -54,14 +61,13 @@ WORKDIR /app
 
 # Install production dependencies only
 COPY --from=builder /app/packages/vault-api/package*.json ./packages/vault-api/
-COPY --from=builder /app/packages/shared/package*.json ./packages/shared/
 
-# Copy built shared package
-COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
-COPY --from=builder /app/packages/shared/package.json ./packages/shared/
-
-# Install only production dependencies for vault-api
+# Copy the shared package tarball and install it
+COPY --from=builder /app/packages/shared/secretio-shared-0.1.0.tgz ./packages/shared/
 WORKDIR /app/packages/vault-api
+RUN npm install ../shared/secretio-shared-0.1.0.tgz
+
+# Install remaining production dependencies
 RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --omit=dev; fi && npm cache clean --force
 
 # Copy built vault-api application
