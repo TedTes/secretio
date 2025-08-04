@@ -30,12 +30,16 @@ COPY packages/shared ./packages/shared
 WORKDIR /app/packages/shared
 RUN npm run build
 
-# Copy vault-api source
+# Copy vault-api source  
 WORKDIR /app
 COPY packages/vault-api ./packages/vault-api
 
-# Build vault-api
+# Create a symlink for the shared package so vault-api can find it
 WORKDIR /app/packages/vault-api
+RUN mkdir -p node_modules/@secretio && \
+    ln -sf ../../shared node_modules/@secretio/shared
+
+# Build vault-api
 RUN npm run build
 
 # Stage 2: Production stage
