@@ -9,8 +9,11 @@ RUN apk add --no-cache python3 make g++
 
 # Copy package files for dependency installation
 COPY package*.json ./
+COPY tsconfig.json ./
 COPY packages/vault-api/package*.json ./packages/vault-api/
+COPY packages/vault-api/tsconfig.json ./packages/vault-api/
 COPY packages/shared/package*.json ./packages/shared/
+COPY packages/shared/tsconfig.json ./packages/shared/
 
 # Install dependencies for each package separately (including dev deps for building)
 # First install shared package dependencies
