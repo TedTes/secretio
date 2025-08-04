@@ -7,7 +7,6 @@
         "dev": "tsx watch src/index.ts",
         "build": "tsc",
         "start": "node dist/index.js",
-        "install-backend": "npm install --workspaces --include=vault-api --include=shared",
         "test": "tsx src/test.ts",
         "setup-db": "tsx scripts/bootstrap-setup-db.ts",
         "db:migrate": "tsx scripts/setup-db.ts"
@@ -35,5 +34,8 @@
         "stripe": "^18.3.0",
         "tsx": "^4.0.0",
         "typescript": "^5.0.0"
+    },
+    "engines": {
+        "node": ">=18.0.0"
     }
 }
