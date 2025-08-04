@@ -13,10 +13,17 @@ COPY package*.json ./
 COPY packages/vault-api/package*.json ./packages/vault-api/
 COPY packages/shared/package*.json ./packages/shared/
 
-# Install all dependencies
-RUN npm ci --only=production && npm cache clean --force
+# Install dependencies for each package separately
+# First install shared package dependencies
+WORKDIR /app/packages/shared
+RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --omit=dev; fi && npm cache clean --force
+
+# Install vault-api dependencies
+WORKDIR /app/packages/vault-api
+RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --omit=dev; fi && npm cache clean --force
 
 # Copy shared package source and build it
+WORKDIR /app
 COPY packages/shared ./packages/shared
 WORKDIR /app/packages/shared
 RUN npm run build
@@ -40,7 +47,6 @@ RUN addgroup -g 1001 -S nodejs && \
 WORKDIR /app
 
 # Install production dependencies only
-COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/packages/vault-api/package*.json ./packages/vault-api/
 COPY --from=builder /app/packages/shared/package*.json ./packages/shared/
 
@@ -50,7 +56,7 @@ COPY --from=builder /app/packages/shared/package.json ./packages/shared/
 
 # Install only production dependencies for vault-api
 WORKDIR /app/packages/vault-api
-RUN npm ci --only=production && npm cache clean --force
+RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --omit=dev; fi && npm cache clean --force
 
 # Copy built vault-api application
 COPY --from=builder /app/packages/vault-api/dist ./dist
