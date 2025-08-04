@@ -224,7 +224,7 @@ export class ScanService {
     
     for (const request of repositories) {
       try {
-        const result = await this.scanRepository(request);
+        const result:ScanResponse = await this.scanRepository(request);
         results.push(result);
       } catch (error) {
         // Add failed scan to results
