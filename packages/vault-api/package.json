@@ -7,12 +7,12 @@
         "dev": "tsx watch src/index.ts",
         "build": "tsc",
         "start": "node dist/index.js",
+        "install-backend": "npm install --workspaces --include=vault-api --include=shared",
         "test": "tsx src/test.ts",
         "setup-db": "tsx scripts/bootstrap-setup-db.ts",
         "db:migrate": "tsx scripts/setup-db.ts"
     },
     "dependencies": {
-        "@secretio/packages/shared": "file:../shared",
         "@supabase/supabase-js": "^2.50.4",
         "cors": "^2.8.5",
         "dotenv": "^16.0.0",

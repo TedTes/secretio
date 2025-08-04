@@ -1,0 +1,10 @@
+{
+    "name": "secretio",
+    "private": true,
+    "workspaces": [
+      "vault-api",
+      "shared",
+      "web"
+    ]
+  }
+  
