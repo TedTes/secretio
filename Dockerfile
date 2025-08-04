@@ -1,4 +1,3 @@
-
 # Stage 1: Build stage
 FROM node:18-alpine AS builder
 
@@ -13,14 +12,14 @@ COPY package*.json ./
 COPY packages/vault-api/package*.json ./packages/vault-api/
 COPY packages/shared/package*.json ./packages/shared/
 
-# Install dependencies for each package separately
+# Install dependencies for each package separately (including dev deps for building)
 # First install shared package dependencies
 WORKDIR /app/packages/shared
-RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --omit=dev; fi && npm cache clean --force
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi && npm cache clean --force
 
 # Install vault-api dependencies
 WORKDIR /app/packages/vault-api
-RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --omit=dev; fi && npm cache clean --force
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi && npm cache clean --force
 
 # Copy shared package source and build it
 WORKDIR /app
