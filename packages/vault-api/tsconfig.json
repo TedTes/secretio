@@ -1,16 +1,23 @@
 {
-    "extends": "../../tsconfig.json",
-    "compilerOptions": {
-      "target": "ES2020",
-      "module": "CommonJS",
-      "outDir": "./dist",
-      "rootDir": "./",
-      "strict": true,
-      "esModuleInterop": true,
-      "skipLibCheck": true,
-      "forceConsistentCasingInFileNames": true,
-      "types": ["node"]
-    },
-    "include": ["src/**/*","scripts/**/*" ],
-    "exclude": ["node_modules", "dist"]
-  }
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@secretio/shared": ["../shared/src/index"],
+      "@secretio/shared/*": ["../shared/src/*"]
+    }
+  },
+  "include": ["src/**/*", "/scripts/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

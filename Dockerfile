@@ -1,37 +1,28 @@
-# Build stage
-FROM node:18-alpine AS builder
+FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy root tsconfig.json if it exists (needed by all packages)
-COPY tsconfig.json* ./
-
-# Copy shared package first
+# Create the exact monorepo structure
 COPY packages/shared ./packages/shared
-WORKDIR /app/packages/shared
-RUN npm install && npm run build
-
-# Copy vault-api package
-WORKDIR /app
 COPY packages/vault-api ./packages/vault-api
-WORKDIR /app/packages/vault-api
 
-# Install dependencies (this will link the shared package via file: dependency)
+# First, build the shared package
+WORKDIR /app/packages/shared
 RUN npm install
-
-# Build the application
 RUN npm run build
 
-# Production stage
-FROM node:18-alpine AS production
+# Now build vault-api with the shared dependency
+WORKDIR /app/packages/vault-api
 
-WORKDIR /app
+# Install dependencies (this will create the symlink to ../shared)
+RUN npm install
 
-# Copy the entire built structure to maintain proper linking
-COPY --from=builder /app/packages/shared ./packages/shared
-COPY --from=builder /app/packages/vault-api/dist ./dist
-COPY --from=builder /app/packages/vault-api/package.json ./package.json
-COPY --from=builder /app/packages/vault-api/node_modules ./node_modules
+# Verify the shared package is properly linked
+RUN ls -la node_modules/@secretio/
+RUN ls -la ../shared/dist/
+
+# Build vault-api
+RUN npm run build
 
 # Expose port
 EXPOSE 8080
