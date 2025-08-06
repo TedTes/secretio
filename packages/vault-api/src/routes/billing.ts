@@ -98,4 +98,66 @@ billingRoutes.post('/create-portal-session',
     })
   );
 
+  // GET /api/billing/subscription - Get user's subscription status
+billingRoutes.get('/subscription',
+  requireAuth,
+  injectUserContext,
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const userId = getUserId(req);
+
+    if (!userId) {
+      throw createError('User ID required', 401);
+    }
+
+    try {
+      const subscription = await stripeService.getUserSubscription(userId);
+      const hasActive = await stripeService.hasActiveSubscription(userId);
+
+      res.json({
+        success: true,
+        data: {
+          subscription,
+          hasActiveSubscription: hasActive,
+          tier: subscription?.status === 'active' ? 'pro' : 'free'
+        }
+      });
+
+    } catch (error) {
+      console.error('Failed to get subscription:', error);
+      throw createError('Failed to get subscription status', 500);
+    }
+  })
+);
+
+// POST /api/billing/cancel-subscription - Cancel user's subscription
+billingRoutes.post('/cancel-subscription',
+  requireAuth,
+  injectUserContext,
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const userId = getUserId(req);
+
+    if (!userId) {
+      throw createError('User ID required', 401);
+    }
+
+    try {
+      const subscription = await stripeService.getUserSubscription(userId);
+      
+      if (!subscription?.stripe_subscription_id) {
+        throw createError('No active subscription found', 404);
+      }
+
+      await stripeService.cancelSubscription(subscription.stripe_subscription_id);
+
+      res.json({
+        success: true,
+        message: 'Subscription will be cancelled at the end of the current billing period'
+      });
+
+    } catch (error) {
+      console.error('Failed to cancel subscription:', error);
+      throw createError('Failed to cancel subscription', 500);
+    }
+  })
+);
   export default billingRoutes;
