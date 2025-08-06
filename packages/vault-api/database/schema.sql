@@ -181,6 +181,7 @@ CREATE TABLE IF NOT EXISTS user_github_connections (
   UNIQUE(github_user_id) -- One user per GitHub account
 );
 
+-- Create user_subscriptions table (PostgreSQL/Supabase compatible)
 CREATE TABLE IF NOT EXISTS user_subscriptions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -193,10 +194,50 @@ CREATE TABLE IF NOT EXISTS user_subscriptions (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   
+  -- Constraints
   UNIQUE(user_id),
-  INDEX idx_stripe_customer_id (stripe_customer_id),
-  INDEX idx_stripe_subscription_id (stripe_subscription_id)
+  UNIQUE(stripe_customer_id),
+  UNIQUE(stripe_subscription_id)
 );
+
+-- Create indexes (PostgreSQL syntax)
+CREATE INDEX IF NOT EXISTS idx_user_subscriptions_user_id ON user_subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_subscriptions_stripe_customer_id ON user_subscriptions(stripe_customer_id);
+CREATE INDEX IF NOT EXISTS idx_user_subscriptions_stripe_subscription_id ON user_subscriptions(stripe_subscription_id);
+CREATE INDEX IF NOT EXISTS idx_user_subscriptions_status ON user_subscriptions(status);
+
+-- Enable RLS
+ALTER TABLE user_subscriptions ENABLE ROW LEVEL SECURITY;
+
+-- Create RLS policies
+CREATE POLICY "Users can view own subscription" 
+  ON user_subscriptions FOR SELECT 
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own subscription" 
+  ON user_subscriptions FOR INSERT 
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own subscription" 
+  ON user_subscriptions FOR UPDATE 
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Service can manage subscriptions" 
+  ON user_subscriptions FOR ALL 
+  USING (true);
+
+-- Add updated_at trigger
+CREATE OR REPLACE FUNCTION update_user_subscriptions_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_user_subscriptions_updated_at 
+  BEFORE UPDATE ON user_subscriptions 
+  FOR EACH ROW EXECUTE FUNCTION update_user_subscriptions_updated_at();
 -- Create indexes
 CREATE INDEX IF NOT EXISTS idx_user_github_connections_user_id ON user_github_connections(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_github_connections_github_user_id ON user_github_connections(github_user_id);
