@@ -4,7 +4,7 @@ import { ScanResult } from '@secretio/shared';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { createError } from '../middleware/errorHandler';
 import { encryptionService } from '../utils/encryption';
-import {StoreKeyRequest } from "../types";
+import {StoreKeyRequest,DbUserSubscription } from "../types";
 export class DatabaseService {
   private supabaseClient: SupabaseClient;
   
@@ -160,17 +160,17 @@ async getScanJob(jobId: string, userId?: string): Promise<DbScanJob | null> {
   return data;
 }
 
-  async getUserScanJobs(userId: string, limit = 50): Promise<DbScanJob[]> {
-    const { data, error } = await supabase
-      .from('scan_jobs')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(limit);
+async getUserScanJobs(userId: string, limit = 50): Promise<DbScanJob[]> {
+  const { data, error } = await supabase
+    .from('scan_jobs')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
 
-    if (error) throw new Error(`Failed to get user scan jobs: ${error.message}`);
-    return data || [];
-  }
+  if (error) throw new Error(`Failed to get user scan jobs: ${error.message}`);
+  return data || [];
+}
 
   // Results management
   async storeScanResults(jobId: string, results: ScanResult[]): Promise<void> {
@@ -501,6 +501,85 @@ async deleteScanJobs(userId: string, jobIds: string[]): Promise<void> {
     throw error;
   }
 }
+
+async createOrUpdateSubscription(subscriptionData: {
+  userId: string;
+  stripeCustomerId: string;
+  stripeSubscriptionId: string;
+  status: string;
+  planId: string;
+  currentPeriodStart: Date;
+  currentPeriodEnd: Date;
+}): Promise<DbUserSubscription> {
+  const { data, error } = await this.supabaseClient
+    .from('user_subscriptions')
+    .upsert({
+      user_id: subscriptionData.userId,
+      stripe_customer_id: subscriptionData.stripeCustomerId,
+      stripe_subscription_id: subscriptionData.stripeSubscriptionId,
+      status: subscriptionData.status,
+      plan_id: subscriptionData.planId,
+      current_period_start: subscriptionData.currentPeriodStart.toISOString(),
+      current_period_end: subscriptionData.currentPeriodEnd.toISOString(),
+      updated_at: new Date().toISOString()
+    })
+    .select()
+    .single();
+
+  if (error) throw new Error(`Failed to create/update subscription: ${error.message}`);
+  return data;
+}
+
+async getUserSubscription(userId: string): Promise<DbUserSubscription | null> {
+  const { data, error } = await this.supabaseClient
+    .from('user_subscriptions')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') {
+    throw new Error(`Failed to get user subscription: ${error.message}`);
+  }
+  return data;
+}
+
+async updateSubscriptionStatus(userId: string, status: string): Promise<void> {
+  const { error } = await this.supabaseClient
+    .from('user_subscriptions')
+    .update({ 
+      status,
+      updated_at: new Date().toISOString()
+    })
+    .eq('user_id', userId);
+
+  if (error) throw new Error(`Failed to update subscription status: ${error.message}`);
+}
+
+async updateUserSubscriptionTier(userId: string, tier: string): Promise<void> {
+  const { error } = await this.supabaseClient
+    .from('users')
+    .update({ 
+      subscription_tier: tier,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', userId);
+
+  if (error) throw new Error(`Failed to update user subscription tier: ${error.message}`);
+}
+
+async getSubscriptionByStripeId(stripeSubscriptionId: string): Promise<DbUserSubscription | null> {
+  const { data, error } = await this.supabaseClient
+    .from('user_subscriptions')
+    .select('*')
+    .eq('stripe_subscription_id', stripeSubscriptionId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') {
+    throw new Error(`Failed to get subscription by Stripe ID: ${error.message}`);
+  }
+  return data;
+}
+
   // Health check
   async healthCheck(): Promise<boolean> {
     try {
