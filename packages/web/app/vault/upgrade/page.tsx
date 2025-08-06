@@ -4,21 +4,15 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import { loadStripe } from '@stripe/stripe-js';
-import {IUserSubscription} from "../../lib/types";
+import {apiClient,types} from "../../lib";
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
-
-interface SubscriptionData {
-  subscription: IUserSubscription;
-  hasActiveSubscription: boolean;
-  tier: 'free' | 'pro';
-}
 
 export default function VaultUpgradePage() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [subscriptionData, setSubscriptionData] = useState<SubscriptionData | null>(null);
+  const [subscriptionData, setSubscriptionData] = useState<types.ISubscription>();
   const [loadingSubscription, setLoadingSubscription] = useState(true);
 
   // Check current subscription status
@@ -27,16 +21,11 @@ export default function VaultUpgradePage() {
       if (!isAuthenticated || !user) return;
 
       try {
-        const response = await fetch('/api/billing/subscription', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-
-        if (response.ok) {
-          const result = await response.json();
+        const result= await apiClient.checkSubscription();
+        if(result.success && result.data) {
           setSubscriptionData(result.data);
-        }
+        } else throw Error(`check subscription error:${result}`)
+       
       } catch (error) {
         console.error('Failed to check subscription:', error);
       } finally {
@@ -57,24 +46,13 @@ export default function VaultUpgradePage() {
     setError(null);
 
     try {
-      // Create checkout session
-      const response = await fetch('/api/billing/create-checkout-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          priceId: process.env.NEXT_PUBLIC_VAULT_PRICE_ID
-        })
-      });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create checkout session');
+     const result= await apiClient.createCheckoutSession() ;
+      if (result.error || !result.data ) {
+        throw new Error(`${result.error}Failed to create checkout session`);
       }
 
-      const { data } = await response.json();
+    
 
       // Redirect to Stripe Checkout
       const stripe = await stripePromise;
@@ -83,7 +61,7 @@ export default function VaultUpgradePage() {
       }
 
       const { error } = await stripe.redirectToCheckout({
-        sessionId: data.sessionId
+        sessionId: result.data.sessionId
       });
 
       if (error) {

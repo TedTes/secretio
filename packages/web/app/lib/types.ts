@@ -128,7 +128,7 @@ export interface IVaultKey {
     error?:object | string;
   }
 
-  export interface IUserSubscription {
+  export  interface IUserSubscription {
     user_id?: string;
     stripe_customer_id?: string;
     stripe_subscription_id?: string;
@@ -138,4 +138,15 @@ export interface IVaultKey {
     current_period_end?: string;
     created_at?: string;
     updated_at?: string;
+  }
+
+  export interface ICheckoutSession {
+      sessionId: string;
+      url: string;
+  }
+
+  export interface ISubscription {
+    subscription:IUserSubscription;
+    hasActiveSubscription: boolean;
+    tier:  'pro' | 'free'
   }

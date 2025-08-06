@@ -11,7 +11,9 @@ import {
   GitHubBranch,
   GitHubConnectionStatus,
   IVaultKey,
-  ScanStats
+  ScanStats,
+  ICheckoutSession,
+  ISubscription
 } from "./types"
 
 class ApiClient {
@@ -464,6 +466,20 @@ class ApiClient {
     ) as ApiResponse;
     return response;
   }
+ async createCheckoutSession():Promise<ApiResponse<ICheckoutSession>> {
+        // Create checkout session
+       return  await this.request('/api/billing/create-checkout-session',{
+          method: 'POST',
+          body: JSON.stringify({
+            priceId: process.env.NEXT_PUBLIC_VAULT_PRICE_ID
+          })
+        })
+ 
+ }
+ async checkSubscription() :Promise<ApiResponse<ISubscription>>{ 
+  return await this.request('/api/billing/subscription');
+ }
+
   }
   
   // Export singleton instance
