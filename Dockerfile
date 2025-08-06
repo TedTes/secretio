@@ -23,7 +23,7 @@ RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi && npm cache 
 
 # Install vault-api dependencies
 WORKDIR /app/packages/vault-api
-RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi && npm cache clean --force
+RUN rm -f package-lock.json && npm install && npm cache clean --force
 
 # Copy shared package source and build it
 WORKDIR /app
