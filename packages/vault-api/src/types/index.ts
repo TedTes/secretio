@@ -19,3 +19,4 @@ export {
 export {ScanStats} from "./api";
 export {ScanRequest} from "./github";
 export {StoreKeyRequest} from "./vault";
+export {DbUserSubscription} from "./database";
