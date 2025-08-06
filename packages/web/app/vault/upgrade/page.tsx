@@ -4,11 +4,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import { loadStripe } from '@stripe/stripe-js';
-
+import {IUserSubscription} from "../../lib/types";
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 interface SubscriptionData {
-  subscription: any;
+  subscription: IUserSubscription;
   hasActiveSubscription: boolean;
   tier: 'free' | 'pro';
 }
@@ -157,7 +157,7 @@ export default function VaultUpgradePage() {
               Vault Pro Active
             </h1>
             <p className="text-xl text-green-400">
-              ✅ You're all set with enterprise-grade security
+              ✅ You&apos;re all set with enterprise-grade security
             </p>
           </div>
 

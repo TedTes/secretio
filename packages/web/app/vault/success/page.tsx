@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 
-export default function SuccessPage() {
+ function SuccessPageDefault() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [verifying, setVerifying] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -174,4 +174,10 @@ export default function SuccessPage() {
       </div>
     </div>
   );
+}
+
+export default function SuccessPage() {
+  return <Suspense fallback = {<div>Loadding...</div>}>
+     <SuccessPageDefault/>
+  </Suspense>
 }

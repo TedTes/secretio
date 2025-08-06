@@ -207,7 +207,7 @@ export default function BillingPage() {
           <div className="bg-slate-800 rounded-lg border border-gray-700 p-6">
             <h2 className="text-xl font-bold text-white mb-4">Billing History</h2>
             <p className="text-gray-400 text-sm">
-              For detailed billing history and invoices, use the "Manage Billing" button above to access your Stripe customer portal.
+              For detailed billing history and invoices, use the &quot;Manage Billing&quot; button above to access your Stripe customer portal.
             </p>
           </div>
         </div>
