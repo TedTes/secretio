@@ -20,41 +20,10 @@ ALTER TABLE users
   ADD CONSTRAINT users_id_fkey 
   FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE;
 
-  ALTER TABLE users ADD PRIMARY KEY (id);
-  ALTER TABLE users ALTER COLUMN email SET NOT NULL;
+ALTER TABLE users ADD PRIMARY KEY (id);
+ALTER TABLE users ALTER COLUMN email SET NOT NULL;
 
-  -- Function to handle new Supabase users
-  CREATE OR REPLACE FUNCTION public.handle_new_user()
-  RETURNS TRIGGER AS $$
-  BEGIN
-    INSERT INTO public.users (
-      id, 
-      email, 
-      name, 
-      avatar_url,
-      github_username
-    )
-    VALUES (
-      NEW.id,
-      NEW.email,
-      COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name'),
-      NEW.raw_user_meta_data->>'avatar_url',
-      CASE 
-        WHEN NEW.app_metadata->>'provider' = 'github' 
-        THEN NEW.raw_user_meta_data->>'user_name'
-        ELSE NULL 
-      END
-    )
-    ON CONFLICT (id) DO UPDATE SET
-      email = EXCLUDED.email,
-      name = EXCLUDED.name,
-      avatar_url = EXCLUDED.avatar_url,
-      github_username = COALESCE(EXCLUDED.github_username, users.github_username),
-      updated_at = NOW();
-    
-    RETURN NEW;
-  END;
-  $$ LANGUAGE plpgsql SECURITY DEFINER;
+
 
 -- Create trigger
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
