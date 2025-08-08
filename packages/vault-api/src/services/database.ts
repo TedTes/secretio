@@ -1,4 +1,4 @@
-import { supabase, DbScanJob, DbScanResult, DbScanStats, DbUser,createSupabaseClientWithToken } from '../config/database';
+import {  DbScanJob, DbScanResult, DbScanStats, DbUser,createSupabaseClientWithToken } from '../config/database';
 import { ScanJob, JobStatus, JobProgress } from '../types/jobs';
 import { ScanResult } from '@secretio/shared';
 import { SupabaseClient } from '@supabase/supabase-js';
@@ -12,23 +12,8 @@ export class DatabaseService {
    this.supabaseClient = supabase;
   }
  
-  // User management
-  static async  createUser(email?: string, githubUsername?: string): Promise<DbUser> {
-    const { data, error } = await supabase
-      .from('users')
-      .insert({
-        email,
-        github_username: githubUsername
-      })
-      .select()
-      .single();
-
-    if (error) throw new Error(`Failed to create user: ${error.message}`);
-    return data;
-  }
-
-  static async getUser(userId: string): Promise<DbUser | null> {
-    const { data, error } = await supabase
+ async getUser(userId: string): Promise<DbUser | null> {
+    const { data, error } = await this.supabaseClient
       .from('users')
       .select('*')
       .eq('id', userId)
@@ -46,7 +31,7 @@ export class DatabaseService {
   }
   // Job management
   async createScanJob(job: ScanJob, userId: string): Promise<void> {
-    const { error } = await supabase
+    const { error } = await this.supabaseClient
       .from('scan_jobs')
       .insert({
         id: job.id,
@@ -80,7 +65,7 @@ export class DatabaseService {
       updateData.completed_at = new Date().toISOString();
     }
 
-    const { error: dbError } = await supabase
+    const { error: dbError } = await this.supabaseClient
       .from('scan_jobs')
       .update(updateData)
       .eq('id', jobId);
@@ -133,7 +118,7 @@ async storeIntermediateResults(jobId: string, newResults: ScanResult[]): Promise
     masked_value: this.maskApiKey(result.match)
   }));
 
-  const { error } = await supabase
+  const { error } = await this.supabaseClient
     .from('scan_results')
     .insert(dbResults);
 
@@ -161,7 +146,7 @@ async getScanJob(jobId: string, userId?: string): Promise<DbScanJob | null> {
 }
 
 async getUserScanJobs(userId: string, limit = 50): Promise<DbScanJob[]> {
-  const { data, error } = await supabase
+  const { data, error } = await this.supabaseClient
     .from('scan_jobs')
     .select('*')
     .eq('user_id', userId)
@@ -186,7 +171,7 @@ async getUserScanJobs(userId: string, limit = 50): Promise<DbScanJob[]> {
       masked_value: this.maskApiKey(result.match)
     }));
 
-    const { error } = await supabase
+    const { error } = await this.supabaseClient
       .from('scan_results')
       .insert(dbResults);
 
@@ -206,7 +191,7 @@ async getUserScanJobs(userId: string, limit = 50): Promise<DbScanJob[]> {
 
   // Statistics management
   async storeScanStats(jobId: string, stats: any, duration: number): Promise<void> {
-    const { error } = await supabase
+    const { error } = await this.supabaseClient
       .from('scan_stats')
       .insert({
         job_id: jobId,
@@ -237,7 +222,7 @@ async getUserScanJobs(userId: string, limit = 50): Promise<DbScanJob[]> {
 
   // Analytics
   async getUserStats(userId: string): Promise<any> {
-    const { data, error } = await supabase
+    const { data, error } = await this.supabaseClient
       .from('scan_jobs')
       .select(`
         *,
@@ -284,7 +269,7 @@ async getUserScanJobs(userId: string, limit = 50): Promise<DbScanJob[]> {
     const encryptedValue = encryptionService.encrypt(value);
     const maskedValue = encryptionService.mask(value);
     const valueHash = encryptionService.hash(value); // For duplicate detection
-    return  await supabase
+    return  await this.supabaseClient
         .from('vault_keys')
         .insert({
           user_id: userId,
@@ -302,7 +287,7 @@ async getUserScanJobs(userId: string, limit = 50): Promise<DbScanJob[]> {
   }
   async getUserKeys(userId:string, environment: string = 'production') {
     try {
-      const {data, error} =   await supabase
+      const {data, error} =   await this.supabaseClient
       .from('vault_keys')
       .select('id, key_name, service, environment, masked_value, created_at, updated_at, last_accessed')
       .eq('user_id', userId)
@@ -326,7 +311,7 @@ async getUserScanJobs(userId: string, limit = 50): Promise<DbScanJob[]> {
   }
   async getKeyValue(userId:string, keyName:string , environment:string) {
      //   Get encrypted key from database
-      return await supabase
+      return await this.supabaseClient
         .from('vault_keys')
         .select('encrypted_value, service, id')
         .eq('user_id', userId)
@@ -336,16 +321,16 @@ async getUserScanJobs(userId: string, limit = 50): Promise<DbScanJob[]> {
   }
   async updateLastAccessedTimeStamp(data:any) {
      // Update last accessed timestamp
-      await supabase
+      await this.supabaseClient
         .from('vault_keys')
         .update({ 
           last_accessed: new Date().toISOString(),
-          access_count: supabase.rpc('increment_access_count', { key_id: data.id })
+          access_count: this.supabaseClient.rpc('increment_access_count', { key_id: data.id })
         })
         .eq('id', data.id);
   }
   async deleteKey(userId:string,keyName:string, environment:string) {
-  return  await supabase
+  return  await this.supabaseClient
     .from('vault_keys')
     .delete()
     .eq('user_id', userId)
@@ -359,14 +344,14 @@ async getUserScanJobs(userId: string, limit = 50): Promise<DbScanJob[]> {
       const valueHash = encryptionService.hash(newValue);
 
           // // Update in database
-      return await supabase
+      return await this.supabaseClient
         .from('vault_keys')
         .update({
           encrypted_value: encryptedValue,
           masked_value: maskedValue,
           value_hash: valueHash,
           updated_at: new Date().toISOString(),
-          rotation_count: supabase.rpc('increment_rotation_count', { key_name: keyName })
+          rotation_count: this.supabaseClient.rpc('increment_rotation_count', { key_name: keyName })
         })
         .eq('user_id', userId)
         .eq('key_name', keyName)
@@ -583,7 +568,7 @@ async getSubscriptionByStripeId(stripeSubscriptionId: string): Promise<DbUserSub
   // Health check
   async healthCheck(): Promise<boolean> {
     try {
-      const { error } = await supabase
+      const { error } = await this.supabaseClient
         .from('scan_jobs')
         .select('id')
         .limit(1);

@@ -54,10 +54,7 @@ authRoutes.post('/register',
         throw createError(authResult.error || 'Registration failed', 400, 'REGISTRATION_FAILED');
       }
 
-      // Create user record in our database
-      const user = await DatabaseService.createUser(email, github_username);
-
-      console.log(`✅ User registered successfully: ${user.id} (${email})`);
+      console.log(`✅ User registered successfully: (${email})`);
 
       const response: ApiResponse<AuthResponse> = {
         success: true,
@@ -103,15 +100,7 @@ authRoutes.post('/login',
         throw createError(authResult.error || 'Invalid credentials', 401, 'INVALID_CREDENTIALS');
       }
 
-      // Get user record from our database
-      let user = await DatabaseService.getUser(authResult.user.id);
-      
-      // Create user record if it doesn't exist (OAuth users)
-      if (!user) {
-        user = await DatabaseService.createUser(authResult.user.email);
-      }
-
-      console.log(`✅ User logged in successfully: ${user.id} (${email})`);
+      console.log(`✅ User logged in successfully: (${email})`);
 
       const response: ApiResponse<AuthResponse> = {
         success: true,
@@ -220,10 +209,10 @@ authRoutes.get('/me',
   requireAuth,
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const user = req.user;
-
+    const dbServiceInstance = (req as AuthenticatedRequest).dbServiceInstance;
     try {
       // Get additional user data from database
-      const dbUser = await DatabaseService.getUser(user.id);
+      const dbUser = await dbServiceInstance.getUser(user.id);
       
       const response: ApiResponse = {
         success: true,
@@ -386,56 +375,6 @@ authRoutes.post('/oauth/github',
   })
 );
 
-// POST /auth/oauth/callback
-authRoutes.post('/oauth/callback',
-  authRateLimit15Min,
-  logUserAction('oauth_callback'),
-  asyncHandler(async (req: Request, res: Response) => {
-    const { code, state, provider } = req.body;
-
-    console.log(`🔗 OAuth callback for provider: ${provider}`);
-
-    try {
-      const authResult = await authService.handleOAuthCallback(provider, code, state);
-
-      if (!authResult.success || !authResult.user) {
-        throw createError('OAuth authentication failed', 400, 'OAUTH_AUTH_FAILED');
-      }
-
-      // Get or create user record
-      let user = await DatabaseService.getUser(authResult.user.id);
-      
-      if (!user) {
-        const githubUsername = provider === 'github' 
-          ? authResult.user.user_metadata?.user_name || authResult.user.user_metadata?.preferred_username
-          : undefined;
-          
-        user = await DatabaseService.createUser(authResult.user.email, githubUsername);
-      }
-
-      console.log(`✅ OAuth login successful: ${user.id} via ${provider}`);
-
-      const response: ApiResponse<AuthResponse> = {
-        success: true,
-        data: {
-          success: true,
-          user: {
-            id: authResult.user.id,
-            email: authResult.user.email,
-            role: 'user'
-          },
-          session: authResult.session,
-          message: `${provider} login successful`
-        }
-      };
-
-      res.json(response);
-    } catch (error) {
-      console.error(`❌ OAuth callback failed for ${provider}:`, error);
-      throw error;
-    }
-  })
-);
 
 // GET /auth/session - Validate current session
 authRoutes.get('/session',

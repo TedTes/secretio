@@ -68,21 +68,6 @@ userRoutes.get('/:userId/stats',
   })
 );
 
-// POST /api/users
-userRoutes.post('/',
-  requireAdmin,
-  asyncHandler(async (req:AuthenticatedRequest, res: Response) => {
-    const { email, github_username } = req.body;
 
-    const user = await DatabaseService.createUser(email, github_username);
-
-    const response: ApiResponse = {
-      success: true,
-      data: user
-    };
-
-    res.status(201).json(response);
-  })
-);
 
 export default userRoutes;
