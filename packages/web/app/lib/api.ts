@@ -149,17 +149,17 @@ class ApiClient {
       return response.data || response;
     }
   
-    async register(userData: RegisterRequest): Promise<AuthResponse> {
+    async register(userData: RegisterRequest): Promise<ApiResponse| undefined> {
       const response = await this.request<AuthResponse>('/api/auth/register', {
         method: 'POST',
         body: JSON.stringify(userData),
       });
-      
-      if (response.success && response.data?.session?.access_token) {
-        this.setToken(response.data.session.access_token);
+      const authResponse = response.data;
+      if (response.success && authResponse?.session?.access_token) {
+        this.setToken(authResponse.session.access_token);
       }
       
-      return response.data || response;
+      return authResponse;
     }
   
     async logout(): Promise<void> {

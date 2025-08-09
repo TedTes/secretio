@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import OAuthButtons from './OAuthButtons';
-
+import {apiClient} from "../../lib/api";
 interface RegisterModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -13,7 +13,9 @@ interface RegisterModalProps {
 }
 
 export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: RegisterModalProps) {
-  const { register, isLoading, error, clearError } = useAuth();
+
+  const [success, setSuccess] = useState(false);
+  const { isLoading, error, clearError } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -44,20 +46,23 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
     
     try {
-      await register({
+
+   
+      await apiClient.register({
         email: formData.email,
         password: formData.password,
         github_username: formData.github_username || undefined,
       });
-      onClose();
+      setSuccess(true);;
       // Reset form
       setFormData({ email: '', password: '', confirmPassword: '', github_username: '' });
       setValidationError('');
     } catch (error) {
+      console.log("handleSubmit event handler error ",error)
       console.log(error);
       // Error is handled by AuthContext
     }
@@ -71,109 +76,146 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
   };
 
   const displayError = error || validationError;
-
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Create Account">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {displayError && (
-          <div className="bg-red-600/10 border border-red-600/20 rounded-lg p-3 text-red-400 text-sm">
-            {displayError}
-          </div>
-        )}
-        
-        <div>
-          <label htmlFor="reg-email" className="block text-sm font-medium text-gray-300 mb-2">
-            Email
-          </label>
-          <input
-            type="email"
-            id="reg-email"
-            required
-            className="w-full px-3 py-2 bg-slate-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Enter your email"
-            value={formData.email}
-            onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-          />
-        </div>
-        
-        <div>
-          <label htmlFor="github-username" className="block text-sm font-medium text-gray-300 mb-2">
-            GitHub Username (Optional)
-          </label>
-          <input
-            type="text"
-            id="github-username"
-            className="w-full px-3 py-2 bg-slate-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Your GitHub username"
-            value={formData.github_username}
-            onChange={(e) => setFormData(prev => ({ ...prev, github_username: e.target.value }))}
-          />
-        </div>
-        
-        <div>
-          <label htmlFor="reg-password" className="block text-sm font-medium text-gray-300 mb-2">
-            Password
-          </label>
-          <input
-            type="password"
-            id="reg-password"
-            required
-            className="w-full px-3 py-2 bg-slate-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Create a password"
-            value={formData.password}
-            onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-          />
-          <p className="text-xs text-gray-400 mt-1">
-            Must be 8+ characters with uppercase, lowercase, and number
+    <Modal isOpen={isOpen} onClose={handleClose} title={success ? "Check Your Email" : "Create Account"}>
+      {success ? (
+        // Success state - show inside modal
+        <div className="text-center py-6">
+        <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+  <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+  </svg>
+</div>
+          
+          <h3 className="text-xl font-semibold text-white mb-2">Account Created Successfully!</h3>
+          <p className="text-gray-300 mb-6">
+            Please check your email and click the verification link to activate your account.
           </p>
-        </div>
-        
-        <div>
-          <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-300 mb-2">
-            Confirm Password
-          </label>
-          <input
-            type="password"
-            id="confirm-password"
-            required
-            className="w-full px-3 py-2 bg-slate-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Confirm your password"
-            value={formData.confirmPassword}
-            onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-          />
-        </div>
-        
-        <Button
-          type="submit"
-          variant="primary"
-          size="lg"
-          loading={isLoading}
-          className="w-full"
-        >
-          Create Account
-        </Button>
-        
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-600" />
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-slate-900 text-gray-400">Or continue with</span>
+          
+          <div className="space-y-3">
+            <Button
+              onClick={() => {
+                setSuccess(false);
+                onClose();
+                onSwitchToLogin();
+              }}
+              variant="primary"
+              className="w-full"
+            >
+              Continue to Sign In
+            </Button>
+            
+            <button
+              onClick={() => setSuccess(false)}
+              className="text-gray-400 hover:text-gray-300 text-sm"
+            >
+              Register Another Account
+            </button>
           </div>
         </div>
-        
-        <OAuthButtons />
-        
-        <div className="text-center">
-          <button
-            type="button"
-            onClick={onSwitchToLogin}
-            className="text-blue-400 hover:text-blue-300 text-sm transition-colors"
+      ) : (
+        // Registration form - show inside modal
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {displayError && (
+            <div className="bg-red-600/10 border border-red-600/20 rounded-lg p-3 text-red-400 text-sm">
+              {displayError}
+            </div>
+          )}
+          
+          <div>
+            <label htmlFor="reg-email" className="block text-sm font-medium text-gray-300 mb-2">
+              Email
+            </label>
+            <input
+              type="email"
+              id="reg-email"
+              required
+              className="w-full px-3 py-2 bg-slate-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Enter your email"
+              value={formData.email}
+              onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="github-username" className="block text-sm font-medium text-gray-300 mb-2">
+              GitHub Username (Optional)
+            </label>
+            <input
+              type="text"
+              id="github-username"
+              className="w-full px-3 py-2 bg-slate-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Your GitHub username"
+              value={formData.github_username}
+              onChange={(e) => setFormData(prev => ({ ...prev, github_username: e.target.value }))}
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="reg-password" className="block text-sm font-medium text-gray-300 mb-2">
+              Password
+            </label>
+            <input
+              type="password"
+              id="reg-password"
+              required
+              className="w-full px-3 py-2 bg-slate-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Create a password"
+              value={formData.password}
+              onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+            />
+            <p className="text-xs text-gray-400 mt-1">
+              Must be 8+ characters with uppercase, lowercase, and number
+            </p>
+          </div>
+          
+          <div>
+            <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-300 mb-2">
+              Confirm Password
+            </label>
+            <input
+              type="password"
+              id="confirm-password"
+              required
+              className="w-full px-3 py-2 bg-slate-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Confirm your password"
+              value={formData.confirmPassword}
+              onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+            />
+          </div>
+          
+          <Button
+            type="submit"
+            variant="primary"
+            size="lg"
+            loading={isLoading}
+            className="w-full"
           >
-            Already have an account? Sign in
-          </button>
-        </div>
-      </form>
+            Create Account
+          </Button>
+          
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-600" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-slate-900 text-gray-400">Or continue with</span>
+            </div>
+          </div>
+          
+          <OAuthButtons />
+          
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={onSwitchToLogin}
+              className="text-blue-400 hover:text-blue-300 text-sm transition-colors"
+            >
+              Already have an account? Sign in
+            </button>
+          </div>
+        </form>
+      )}
     </Modal>
   );
 }

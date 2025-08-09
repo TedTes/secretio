@@ -121,19 +121,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setError(null);
       
       const response = await apiClient.register(userData);
-      
-      if (response.success && response.user && response.session) {
-        setUser(response.user);
-        setSession(response.session);
-        
-        // Store refresh token if provided
-        if (response.session.refresh_token) {
-          localStorage.setItem('refresh_token', response.session.refresh_token);
-        }
+      // With email confirmation: success = user exists, session will be null
+      if (response?.success) {
+        // Registration successful! 
+        console.log('✅ Registration successful, awaiting email confirmation');
+        setUser(null);
+        setSession(null);
       } else {
-        throw new Error(response.error || 'Registration failed');
+        throw new Error(response?.error || 'Registration failed');
       }
     } catch (error) {
+      console.log("error in regiser method",error)
       const errorMessage = error instanceof Error ? error.message : 'Registration failed';
       setError(errorMessage);
       throw error;
